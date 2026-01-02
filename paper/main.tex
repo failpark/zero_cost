@@ -1,389 +1,60 @@
-\documentclass[10pt, parskip]{scrartcl}
-\usepackage{svg}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[english]{babel}
-\usepackage{xcolor}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
-\usepackage{minted}
-\usepackage{enumitem}
-\usepackage{tcolorbox}
-\usepackage{tabularx}
-\tcbuselibrary{breakable}
-\tcbuselibrary{skins}
-
-
-\title{KanCLI: Command-Line Kanban}
-\subtitle{Backend Systems – Portfolio 01}
-
-\author{Anna Gropp\\ \small{5124124} \and Daniel Borgs\\ \small{5124094} \and Emma Schüpfer\\ \small{5124120} }
-
-\date{\today}
+\usepackage{xcolor}
+\usepackage[style=ieee]{biblatex}
+\addbibresource{literature.bib}
 
 \begin{document}
+
+\title{
+	Do Rust's compile-time type checks produce equivalent assembly to C while preventing state management errors?
+}
+
+\author{
+	\IEEEauthorblockN{Daniel Borgs}
+	\IEEEauthorblockA{
+		\textit{Faculty of Computer Science and Business Information Systems} \\
+		\textit{Technical University of Applied Sciences Würzburg-Schweinfurt}\\
+		Würzburg, Germany \\
+		daniel.borgs@study.thws.de
+	}
+}
+
 \maketitle
-\tableofcontents
 
-\section{Project Overview}
+\begin{abstract}
+Memory safety vulnerabilities—use-after-free, buffer overflows, out-of-bounds write—are at the top of known exploited vulnerabilities\cite{noauthor_cwe_nodate}. System programming languages like C, which allow for low-level memory control, are needed to write performance critical code.
+State is the current condition of an object that determines what operations are valid. C cannot enforce valid state transitions, such as reading an open file, at compile-time. Operations need to be checked explicitly at runtime if they are in a valid state before running.
+Higher-level languages like Java automate detecting potentially unsafe operations, preventing errors but degrading performance. Therefore, developers have to make a tradeoff between safety and speed.
 
-A terminal-based Kanban board that lets teams organize tasks across projects, assign
-work, and track progress through workflow states, all via CLI because context-switching
-to browsers breaks flow.
+Rust has the ability to move certain behaviors to compile-time execution or analysis. This approach claims to be able to verify state validity during compilation, which could lead to preventing errors that runtime checks would detect while achieving comparable C performance.
+This work tests whether Rust's compile-time guarantees produce assembly with equivalent performance to C code that omits all safety checks.
 
-\subsection{Relevance}
-
-Small development teams need a straightforward way to coordinate work without the overhead
-of complex web interfaces. Jira is overkill for simple task tracking and hampers staying in
-flow state. A terminal-native solution keeps developers in their natural workflow. Just
-\texttt{task move 5 ---state done} and you're good. 
-
-Additionally, it teaches proper backend architecture patterns (hexagonal design, JPA
-relationships, concurrent access) while solving a real productivity problem for technical
-users who prefer the command line.
-
-\subsection{Essential Capabilities}
-
-%Core features that make this work:
-
+Programs must track state explicitly or implicitly. A file handle must be opened before reading; once closed, reads must fail. Verifying these transitions—the core of a state machine—requires verification logic. This work implements three versions of a file handle state machine, isolating state management from I/O overhead:
 \begin{enumerate}
-    \item \textbf{Users:} Each user has a username, password and email. No authorization complexity. Everyone can perform all actions.
-    \item \textbf{Project Organization:} Projects act as containers for tasks. Many-to-many user assignments are supported (users can belong to multiple projects; projects can have multiple users).
-    \item \textbf{Task Management:} Each task has a title, an optional description, a category \texttt{BUG}, \texttt{FEATURE}, \texttt{IMPROVEMENT}, or \texttt{RESEARCH}, and can be assigned to one user or remain unassigned. Tasks belong to a specific project.
-    \item \textbf{Kanban Workflow:} Tasks progress through three predefined states: \texttt{TODO}, \texttt{IN\_PROGRESS} and \texttt{DONE}.
-    \item \textbf{Tagging System:} Tasks can be labeled with flexible tags. The system comes with pre-populated priority tags: high, medium, and low.
-    \item \textbf{Terminal Client:} A lightweight command-line interface (CLI) that communicates with the backend via HTTP requests. The client runs separately from the server.
-    \item \textbf{Concurrent Access:} Multiple users can interact with the system simultaneously using separate client instances.  
-    \item \textbf{Testing:} The codebase includes unit tests to verify individual components of the domain logic and integration tests to ensure correct behavior of API endpoints.
-    \end{enumerate}
-
-
-
-\subsection{Explicit Non-Goals (Out of Scope)}
-
-%To keep this doable in a semester:
-
-\begin{enumerate}
-    \item \textbf{Authentication and Authorization:} No roles. All users are trusted equally since the focus lies on backend architecture.
-    \item \textbf{Advanced Features:} No subtasks, due dates, time tracking, comments, file attachments, or notifications. The scope is limited to the core Kanban workflow.    
+	\item Defensive C: Uses an enum to track state, with explicit validation checks before each operation. Safe, but includes runtime conditional branches.
+	\item Minimal C: Tracks state with an enum, but omits all validation. Fast but permits invalid operations to compile.
+	\item Rust: Encodes each state as a distinct type, making invalid transitions not compile.
 \end{enumerate}
 
+The resulting assembly will be compared using total instruction count, conditional branches, and state-tracking overhead.
 
-\section{Domain Model}
+The deliverables are side-by-side assembly comparisons showing whether Rust eliminates defensive checks present in safe C and an analysis with the above mentioned assembly. The assembly comparison will demonstrate whether encoding state in the type system eliminates defensive branches while matching minimal C's instruction count.
+\end{abstract}
 
-\subsection{The Entities (UML)}
+\begin{IEEEkeywords}
+component, formatting, style, styling, insert.
+\end{IEEEkeywords}
 
-\begin{figure}[H] 
-    \centering
-    \includesvg[inkscapelatex=false, width=\textwidth]{./svg/terminalKanban.svg}
-    \caption{Domain model UML diagram}
-\end{figure}
+\section{Introduction}
 
-
-\subsection{Description}
-
-\begin{enumerate}
-    \item \textbf{User:} Minimal entity for identification via \texttt{username} and \texttt{password}. Both username and email must be unique.
-    \item \textbf{Project:} Groups related tasks. Each project has a unique name and an optional description. Maintains a many-to-many relationship with users through the \texttt{ProjectUser} join table.
-    \item \textbf{Task:} The core entity. Every task belongs to exactly one project and can optionally be assigned to one user. Has a \texttt{state} (enum: \texttt{TODO}, \texttt{IN\_PROGRESS}, \texttt{DONE}) and a \texttt{category} (enum: \texttt{BUG}, \texttt{FEATURE}, \texttt{IMPROVEMENT}, \texttt{RESEARCH}). Title is required; description is optional.
-    \item \textbf{Tag:} Provides flexible labeling. Each tag has an ID and name. Tasks and tags are linked via the \texttt{TaskTag} join table. The system is pre-populated with priority tags (\texttt{high}, \texttt{medium}, \texttt{low}), though custom tags could be added later.
-    \item \textbf{ProjectUser (join table):} Links users and projects in a many-to-many relationship. Uses a composite key on (\texttt{projectId}, \texttt{userId}) and includes a timestamp indicating when the user was added to the project.
-    \item \textbf{TaskTag (join table):} Links tasks and tags via a composite key on (\texttt{taskId}, \texttt{tagId}).
-\end{enumerate}
-
-\subsection{Example Records}
+This document is a model and instructions for \LaTeX. Please observe the conference page limits. For more information about how to become an IEEE Conference author or how to write your paper, please visit the IEEE Conference Author Center website: https://conferences.ieeeauthorcenter.ieee.org/. See.
 
 
-\textbf{User:}
-% \begin{tcolorbox}[colback=gray!5, colframe=black, boxrule=0.5pt, enhanced, breakable
-% ]
-% \begin{minted}[fontsize=\small, breaklines, breakanywhere, frame=none]{json}
-% {
-%   "project": "Kanban",
-%   "users": ["emma", "daniel", "anna"]
-% }
-% \end{minted}
-% \end{tcolorbox}
-
-\begin{minted}[fontsize=\small, 
-               bgcolor=gray!5, 
-               frame=single,
-               breaklines,
-               breakanywhere]{json}
-{
-  "id": 1,
-  "username": "alice",
-  "email": "alice@uni.edu",
-  "hash": "<argon2id-hash>",
-  "createdAt": "2025-10-15T09:00:00"
-}
-\end{minted}
-
-\textbf{Project with users:}
-\begin{minted}[fontsize=\small, 
-               bgcolor=gray!5, 
-               frame=single,
-               breaklines,
-               breakanywhere]{json}
-{
- "id": 1,
- "name": "Backend Systems Course",
- "description": "Final project for CS-401",
- "assignedUsers": [1, 2, 3], 
- "createdAt": "2025-10-20T12:00:00"
-}
-\end{minted}
-
-\textbf{Task with tags:}
-\begin{minted}[fontsize=\small, 
-               bgcolor=gray!5, 
-               frame=single,
-               breaklines,
-               breakanywhere]{json}
-{
-  "id": 5,
-  "title": "Setup database schema",
-  "description": "Create tables for User, Project, Task, Tag, and join tables",
-  "state": "IN_PROGRESS",
-  "category": "FEATURE",
-  "projectId": 1,
-  "assignedToUserId": 2,
-  "tags": ["priority:high", "database"],
-  "createdAt": "2025-10-21T08:30:00",
-  "updatedAt": "2025-10-22T10:15:00"
-}
-\end{minted}
-
-
-
-
-\section{Use Cases}
-
-\subsection{UC-01: Create Project with Users}
-
-\begin{tcolorbox}[colback=gray!5, colframe=black, boxrule=0.5pt, title=UC-01: Create Project with Users, breakable, enhanced]
-    \begin{tabularx}{\linewidth}{@{}p{2.8cm} X@{}}
-        \textbf{Actor:} & Any user \\[0.5em]
-        \textbf{Goal:} & Create a new project and assign people to it \\[0.5em]
-        \textbf{Preconditions:} & Users you want to assign must already exist \\[0.5em]
-        \textbf{Flow:} & 
-        \begin{enumerate}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Provide project name, description (optional), list of user IDs
-            \item System checks name is unique and all user IDs are valid
-            \item Creates project + ProjectUser records
-            \item Returns project with ID
-        \end{enumerate} \\[0.1em]
-        \textbf{Failure Cases:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Project name already exists → system returns an error
-            \item One or more user IDs are invalid → system returns an error
-            \item No users specified → system creates project without assigned users
-        \end{itemize} \\[0.1em]
-        \textbf{Acceptance\\Criteria:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Project can be retrieved by its ID
-            \item Assigned users appear in the ProjectUser table
-            \item Duplicate project names are rejected
-            \item Invalid user IDs produce an error
-        \end{itemize} \\[0.5em]
-        \textbf{Priority:} & Must Have
-    \end{tabularx}
-\end{tcolorbox}
-
-
-
-\subsection{UC-02: Assign User to Project}
-
-\begin{tcolorbox}[colback=gray!5, colframe=black, boxrule=0.5pt, title=UC-02: Assign User to Project, breakable, enhanced]
-    \begin{tabularx}{\linewidth}{@{}p{2.8cm} X@{}}
-        \textbf{Actor:} & Any user \\[0.5em]
-        \textbf{Goal:} & Add someone to an existing project \\[0.5em]
-        \textbf{Preconditions:} & Project and user both exist \\[0.5em]
-        \textbf{Flow:} & 
-        \begin{enumerate}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Provide project ID + user ID
-            \item Check both exist and user isn't already on project
-            \item Create ProjectUser record
-            \item Done
-        \end{enumerate} \\[0.1em]
-        \textbf{Failure Cases:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Project doesn't exist → error
-            \item User doesn't exist → error
-            \item Already assigned → error (no duplicates)
-        \end{itemize} \\[0.1em]
-        \textbf{Acceptance\\Criteria:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item User linked to project
-            \item Timestamp recorded
-            \item Duplicate check works
-        \end{itemize} \\[0.5em]
-        \textbf{Priority:} & Must Have
-    \end{tabularx}
-\end{tcolorbox}
-
-
-
-\subsection{UC-03: Create Task}
-
-\begin{tcolorbox}[colback=gray!5, colframe=black, boxrule=0.5pt, title=UC-03: Create Task, breakable, enhanced]
-    \begin{tabularx}{\linewidth}{@{}p{2.8cm} X@{}}
-        \textbf{Actor:} & Any user \\[0.5em]
-        \textbf{Goal:} & Create a work item in a project \\[0.5em]
-        \textbf{Preconditions:} & Project exists (+ user exists if assigning) \\[0.5em]
-        \textbf{Flow:} & 
-        \begin{enumerate}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Provide project ID, title, description, category, optional assignee
-            \item Validate project exists, title is valid (3-200 chars), category is valid enum
-            \item If assignee given, validate user exists
-            \item Create task with state = \texttt{TODO}
-            \item Return task with ID
-        \end{enumerate} \\[0.1em]
-        \textbf{Failure Cases:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Invalid project → error
-            \item Invalid title → error
-            \item Invalid category → error
-            \item Invalid assignee → error
-            \item No assignee → fine, create unassigned
-        \end{itemize} \\[0.1em]
-        \textbf{Acceptance\\Criteria:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Task created with correct state (\texttt{TODO})
-            \item Linked to project
-            \item Optional assignee works
-            \item Validation catches bad input
-        \end{itemize} \\[0.5em]
-        \textbf{Priority:} & Must Have
-    \end{tabularx}
-\end{tcolorbox}
-
-
-\subsection{UC-04: Assign/Reassign Task}
-
-\begin{tcolorbox}[colback=gray!5, colframe=black, boxrule=0.5pt, title=UC-04: Assign/Reassign Task, breakable, enhanced]
-    \begin{tabularx}{\linewidth}{@{}p{2.8cm} X@{}}
-        \textbf{Actor:} & Any user \\[0.5em]
-        \textbf{Goal:} & Set who's responsible for a task \\[0.5em]
-        \textbf{Preconditions:} & Task and user both exist \\[0.5em]
-        \textbf{Flow:} & 
-        \begin{enumerate}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Provide task ID + user ID
-            \item Validate both exist
-            \item Update task.assignedToUserId
-            \item Update task.updatedAt
-            \item Return updated task
-            \item Return task with ID
-        \end{enumerate} \\[0.1em]
-        \textbf{Failure Cases:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Task doesn't exist → error
-            \item User doesn't exist → error
-            \item Reassigning → works fine, replaces old assignee
-            \item Unassigning (null user ID) → also fine
-        \end{itemize} \\[0.1em]
-        \textbf{Acceptance\\Criteria:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Assignee updated
-            \item Timestamp updated
-            \item Can reassign/unassign
-        \end{itemize} \\[0.5em]
-        \textbf{Priority:} & Must Have
-    \end{tabularx}
-\end{tcolorbox}
-
-
-\subsection{UC-05: Move Task State}
-
-\begin{tcolorbox}[colback=gray!5, colframe=black, boxrule=0.5pt, title=UC-05: Move Task State, breakable, enhanced]
-    \begin{tabularx}{\linewidth}{@{}p{2.8cm} X@{}}
-        \textbf{Actor:} & Any user \\[0.5em]
-        \textbf{Goal:} & Update task through Kanban workflow \\[0.5em]
-        \textbf{Preconditions:} & Task exists \\[0.5em]
-        \textbf{Flow:} & 
-        \begin{enumerate}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Provide task ID + new state (\texttt{TODO}, \texttt{IN\_PROGRESS}, \texttt{DONE})
-            \item Validate task exists and state is valid enum
-            \item Update task.state
-            \item Update task.updatedAt
-            \item Return updated task
-        \end{enumerate} \\[0.1em]
-        \textbf{Failure Cases:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Task doesn't exist → error
-            \item Invalid state → error
-            \item Same state → technically fine (updates timestamp anyway)
-        \end{itemize} \\[0.1em]
-        \textbf{Acceptance\\Criteria:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item State updated
-            \item Timestamp updated
-            \item All transitions allowed (no workflow enforcement)
-            \item Concurrent updates handled safely
-        \end{itemize} \\[0.5em]
-        \textbf{Priority:} & Must Have
-    \end{tabularx}
-\end{tcolorbox}
-
-
-
-\subsection{UC-06: Add/Remove Tags}
-
-\begin{tcolorbox}[colback=gray!5, colframe=black, boxrule=0.5pt, title=UC-06: Add/Remove Tags, breakable, enhanced]
-    \begin{tabularx}{\linewidth}{@{}p{2.8cm} X@{}}
-        \textbf{Actor:} & Any user \\[0.5em]
-        \textbf{Goal:} & Label tasks for organization/filtering \\[0.5em]
-        \textbf{Preconditions:} & Task exists, tag exists \\[0.5em]
-        \textbf{Flow (Add):} & 
-        \begin{enumerate}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Provide task ID + tag name
-            \item Validate task + tag exist
-            \item Check TaskTag doesn't already exist
-            \item Create TaskTag record
-            \item Update task.updatedAt
-            \item Return task with tags
-        \end{enumerate} \\[0.1em]
-        \textbf{Flow (Remove):} & 
-        \begin{enumerate}[noitemsep, topsep=0pt, leftmargin=*]
-                \item Provide task ID + tag name
-                \item Validate task + tag exist
-                \item Delete TaskTag record
-                \item Update task.updatedAt
-                \item Return task with tags                         
-        \end{enumerate} \\[0.1em]
-        \textbf{Failure Cases:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-            \item Task/tag doesn't exist → error
-            \item Tag already on task (add) → error or ignore
-            \item Tag not on task (remove) → error or ignore
-        \end{itemize} \\[0.1em]
-        \textbf{Acceptance\\Criteria:} & 
-        \begin{itemize}[noitemsep, topsep=0pt, leftmargin=*]
-           \item Tags added/removed
-            \item Timestamp updated
-            \item No duplicates
-            \item Pre-seeded priority tags available
-        \end{itemize} \\[0.5em]
-        \textbf{Priority:} & Should Have
-    \end{tabularx}
-\end{tcolorbox}
-
-
-\subsection{Priority Summary}
-
-\begin{tabular}{|l|c|p{4cm}|} 
-\hline
-\textbf{Use Case} & \textbf{Priority} & \textbf{Reason} \\
-\hline
-UC-01: Create Project with Users & Must Have & Foundation \\
-UC-02: Assign User to Project & Must Have & Team collaboration \\
-UC-03: Create Task  & Must Have & Core functionality \\
-UC-04: Assign Task & Must Have & Responsibility tracking \\
-UC-05: Move Task State & Must Have & Kanban workflow \\
-UC-06: Manage Tags & Should Have & Nice to have, not critical \\
-\hline
-\end{tabular}
-
-
-
+\renewcommand*{\UrlFont}{\rmfamily}
+\printbibliography
 
 \end{document}
