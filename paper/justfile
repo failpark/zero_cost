@@ -1,0 +1,23 @@
+_default:
+	@just --list
+
+install:
+	brew install inkscape
+	uv venv --python 3.11
+	uv pip install latexminted==0.5.1
+
+clean:
+	rm -r out/
+	mkdir out
+	touch out/.gitkeep
+
+compile:
+	source .venv/bin/activate
+	# latexmk -pdf -output-directory=out -shell-escape -verbose -file-line-error -synctex=1 -interaction=nonstopmode main.tex
+	latexmk -pdf -output-directory=out -shell-escape -interaction=nonstopmode main.tex
+	mv out/main.pdf main.pdf
+
+debug:
+	source .venv/bin/activate
+	latexmk -pdf -output-directory=out -shell-escape -verbose -file-line-error -synctex=1 main.tex
+
