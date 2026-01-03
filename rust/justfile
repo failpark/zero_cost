@@ -1,0 +1,15 @@
+default:
+	just --list
+
+run:
+	cargo run --release
+
+asm:
+	cargo rustc -- --emit asm
+
+asm-release:
+	cargo rustc --release -- --emit asm
+	just view
+
+view:
+	bat --style=plain target/release/deps/*.s
