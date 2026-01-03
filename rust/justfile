@@ -13,3 +13,9 @@ asm-release:
 
 view:
 	bat --style=plain target/release/deps/*.s
+
+fmt:
+	cargo +nightly fmt
+
+clippy:
+	cargo clippy

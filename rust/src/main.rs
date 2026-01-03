@@ -11,17 +11,26 @@ struct FileHandle<State> {
 
 impl FileHandle<Closed> {
 	fn new() -> Self {
-		FileHandle { data: 0, _state: PhantomData }
+		FileHandle {
+			data: 0,
+			_state: PhantomData,
+		}
 	}
-	
+
 	fn open(self) -> FileHandle<Open> {
-		FileHandle { data: self.data, _state: PhantomData }
+		FileHandle {
+			data: self.data,
+			_state: PhantomData,
+		}
 	}
 }
 
 impl FileHandle<Open> {
 	fn read(self) -> FileHandle<Readable> {
-		FileHandle { data: 42, _state: PhantomData }
+		FileHandle {
+			data: 42,
+			_state: PhantomData,
+		}
 	}
 }
 
@@ -29,9 +38,12 @@ impl FileHandle<Readable> {
 	fn get_data(&self) -> i32 {
 		self.data
 	}
-	
+
 	fn close(self) -> FileHandle<Closed> {
-		FileHandle { data: 0, _state: PhantomData }
+		FileHandle {
+			data: 0,
+			_state: PhantomData,
+		}
 	}
 }
 
