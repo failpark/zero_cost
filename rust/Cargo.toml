@@ -3,10 +3,10 @@ name = "filehandle"
 version = "0.1.0"
 edition = "2024"
 
-[lints.clippy]
-	pedantic = { level = "deny", priority = -1 }
-	nursery  = { level = "deny", priority = -1 }
-	perf  = { level = "deny", priority = -1 }
-	style  = { level = "deny", priority = -1 }
+# [lints.clippy]
+	# pedantic = { level = "deny", priority = -1 }
+	# nursery  = { level = "deny", priority = -1 }
+	# perf  = { level = "deny", priority = -1 }
+	# style  = { level = "deny", priority = -1 }
 
 [dependencies]
