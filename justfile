@@ -6,3 +6,6 @@ fmt:
 
 check:
 	cd rust && just clippy
+
+compile:
+	cd paper && just compile

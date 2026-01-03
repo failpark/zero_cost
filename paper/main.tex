@@ -4,17 +4,18 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{xcolor}
-\usepackage{listings}
+\usepackage{float}
+\usepackage{minted}
 \usepackage[style=ieee]{biblatex}
 \addbibresource{literature.bib}
 
-% Code listing style
-\lstset{
-	basicstyle=\ttfamily\footnotesize,
+% Minted style configuration
+\setminted{
+	fontsize=\footnotesize,
 	breaklines=true,
 	frame=single,
 	numbers=left,
-	numberstyle=\tiny,
+	numbersep=5pt,
 	tabsize=2
 }
 
@@ -104,7 +105,8 @@ To isolate state management from I/O overhead, we implement a minimal file handl
 
 The defensive implementation tracks state explicitly with an enum and validates preconditions before each operation:
 
-\begin{lstlisting}[language=C, caption={Defensive C state management}]
+\begin{listing}[H]
+\begin{minted}{c}
 typedef enum {
     STATE_CLOSED, STATE_OPEN, STATE_READABLE
 } state_t;
@@ -122,7 +124,9 @@ int read_file(file_handle_t* h) {
     h->data = 42;
     return h->data;
 }
-\end{lstlisting}
+\end{minted}
+\caption{Defensive C state management}
+\end{listing}
 
 Each operation contains a conditional branch checking the current state. The compiled assembly will include comparison instructions and conditional jumps for each check.
 
@@ -130,7 +134,8 @@ Each operation contains a conditional branch checking the current state. The com
 
 The minimal implementation omits all state tracking:
 
-\begin{lstlisting}[language=C, caption={Minimal C without state checks}]
+\begin{listing}[H]
+\begin{minted}{c}
 typedef struct {
     int data;
 } file_handle_t;
@@ -139,7 +144,9 @@ int read_file(file_handle_t* h) {
     h->data = 42;
     return h->data;
 }
-\end{lstlisting}
+\end{minted}
+\caption{Minimal C without state checks}
+\end{listing}
 
 This version permits any sequence of operations, including invalid ones. It represents the performance ceiling—the minimum possible overhead—but provides no safety guarantees.
 
@@ -147,7 +154,8 @@ This version permits any sequence of operations, including invalid ones. It repr
 
 The Rust implementation encodes each state as a zero-sized type:
 
-\begin{lstlisting}[language=Rust, caption={Rust typestate pattern}]
+\begin{listing}[H]
+\begin{minted}{rust}
 struct Closed;
 struct Open;
 struct Readable;
@@ -165,7 +173,9 @@ impl FileHandle<Open> {
         }
     }
 }
-\end{lstlisting}
+\end{minted}
+\caption{Rust typestate pattern}
+\end{listing}
 
 The \texttt{PhantomData<State>} field is a zero-sized type marker that exists only for the type checker. The \texttt{read} method is only defined for \texttt{FileHandle<Open>}; calling it on other states produces a compile error. Crucially, consuming \texttt{self} by value prevents reuse of the old handle after transition.
 
@@ -175,11 +185,11 @@ The \texttt{PhantomData<State>} field is a zero-sized type marker that exists on
 
 The Rust implementation rejects invalid state sequences at compile time. Attempting to compile:
 
-\begin{lstlisting}[language=Rust]
+\begin{minted}{rust}
 let f = FileHandle::<Closed>::new();
 let f = f.read();  // Error: no method `read`
                    // for FileHandle<Closed>
-\end{lstlisting}
+\end{minted}
 
 produces an error because \texttt{read} is not implemented for \texttt{FileHandle<Closed>}. The defensive C version compiles equivalent code without complaint, deferring the error to runtime.
 
