@@ -58,5 +58,11 @@ pub fn use_file() -> i32 {
 }
 
 fn main() {
-	use_file();
+	// use_file();
+	let f = FileHandle::<Closed>::new();
+	let f = f.open();
+	let f = f.read();
+	let data = f.get_data();
+	let _f = f.close();
+	println!("{data}");
 }

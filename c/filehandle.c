@@ -49,3 +49,7 @@ int close_file(file_handle_t* h) {
 void destroy_handle(file_handle_t* h) {
 	free(h);
 }
+
+int main(){
+	return 0;
+}

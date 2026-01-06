@@ -4,7 +4,5 @@ default:
 build:
 	gcc -O2 -S filehandle.c -o out/filehandle.s
 
-
-
 view:
 	grep -A 50 "use_file" out/filehandle.s | bat --paging=never --style=plain -l asm

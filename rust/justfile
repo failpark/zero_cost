@@ -5,11 +5,11 @@ run:
 	cargo run --release
 
 asm:
-	cargo rustc -- --emit asm
+	# cargo rustc -- --emit asm
+	cargo rustc -- --emit asm -C "llvm-args=-x86-asm-syntax=intel"
 
 asm-release:
 	cargo rustc --release -- --emit asm
-	just view
 
 view:
 	bat --style=plain target/release/deps/*.s

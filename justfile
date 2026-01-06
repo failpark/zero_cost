@@ -9,3 +9,5 @@ check:
 
 compile:
 	cd paper && just compile
+	cd c && just build
+	cd rust && just asm-release
