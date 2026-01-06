@@ -108,21 +108,21 @@ The defensive implementation tracks state explicitly with an enum and validates 
 \begin{listing}[H]
 \begin{minted}{c}
 typedef enum {
-    STATE_CLOSED, STATE_OPEN, STATE_READABLE
+	STATE_CLOSED, STATE_OPEN, STATE_READABLE
 } state_t;
 
 typedef struct {
-    state_t state;
-    int data;
+	state_t state;
+	int data;
 } file_handle_t;
 
 int read_file(file_handle_t* h) {
-    if (h->state != STATE_OPEN) {
-        return -1;  // Invalid state
-    }
-    h->state = STATE_READABLE;
-    h->data = 42;
-    return h->data;
+	if (h->state != STATE_OPEN) {
+		return -1;  // Invalid state
+	}
+	h->state = STATE_READABLE;
+	h->data = 42;
+	return h->data;
 }
 \end{minted}
 \caption{Defensive C state management}
@@ -137,12 +137,12 @@ The minimal implementation omits all state tracking:
 \begin{listing}[H]
 \begin{minted}{c}
 typedef struct {
-    int data;
+	int data;
 } file_handle_t;
 
 int read_file(file_handle_t* h) {
-    h->data = 42;
-    return h->data;
+	h->data = 42;
+	return h->data;
 }
 \end{minted}
 \caption{Minimal C without state checks}
@@ -161,17 +161,17 @@ struct Open;
 struct Readable;
 
 struct FileHandle<State> {
-    data: i32,
-    _state: PhantomData<State>,
+	data: i32,
+	_state: PhantomData<State>,
 }
 
 impl FileHandle<Open> {
-    fn read(self) -> FileHandle<Readable> {
-        FileHandle {
-            data: 42,
-            _state: PhantomData,
-        }
-    }
+	fn read(self) -> FileHandle<Readable> {
+		FileHandle {
+			data: 42,
+			_state: PhantomData,
+		}
+	}
 }
 \end{minted}
 \caption{Rust typestate pattern}
@@ -188,7 +188,7 @@ The Rust implementation rejects invalid state sequences at compile time. Attempt
 \begin{minted}{rust}
 let f = FileHandle::<Closed>::new();
 let f = f.read();  // Error: no method `read`
-                   // for FileHandle<Closed>
+				   // for FileHandle<Closed>
 \end{minted}
 
 produces an error because \texttt{read} is not implemented for \texttt{FileHandle<Closed>}. The defensive C version compiles equivalent code without complaint, deferring the error to runtime.
