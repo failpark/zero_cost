@@ -2,10 +2,13 @@ default:
 	just --list
 
 build:
-	gcc -O2 -S filehandle.c -o out/filehandle.s
+	gcc -O2 -S filehandle.c -o out/filehandle.o
 
 view:
 	grep -A 50 "use_file" out/filehandle.s | bat --paging=never --style=plain -l asm
+
+disassemble: build
+	objdump -d out/filehandle.o > out/filehandle.asm
 
 clean:
 	rm -r out && mkdir out

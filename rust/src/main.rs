@@ -10,6 +10,7 @@ struct FileHandle<State> {
 }
 
 impl FileHandle<Closed> {
+	#[inline(never)]
 	fn new() -> Self {
 		FileHandle {
 			data: 0,
@@ -17,6 +18,7 @@ impl FileHandle<Closed> {
 		}
 	}
 
+	#[inline(never)]
 	fn open(self) -> FileHandle<Open> {
 		FileHandle {
 			data: self.data,
@@ -26,6 +28,7 @@ impl FileHandle<Closed> {
 }
 
 impl FileHandle<Open> {
+	#[inline(never)]
 	fn read(self) -> FileHandle<Readable> {
 		FileHandle {
 			data: 42,
@@ -35,10 +38,12 @@ impl FileHandle<Open> {
 }
 
 impl FileHandle<Readable> {
+	#[inline(never)]
 	fn get_data(&self) -> i32 {
 		self.data
 	}
 
+	#[inline(never)]
 	fn close(self) -> FileHandle<Closed> {
 		FileHandle {
 			data: 0,
