@@ -3,6 +3,9 @@ name = "filehandle"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib"]
+
 # [lints.clippy]
 	# pedantic = { level = "deny", priority = -1 }
 	# nursery  = { level = "deny", priority = -1 }
