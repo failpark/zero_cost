@@ -203,6 +203,61 @@ The minimal C implementation should contain only the essential operations: memor
 
 The Rust implementation, if zero-cost abstractions hold, should produce assembly equivalent to minimal C. The \texttt{PhantomData} fields should be completely erased, and no state-checking code should appear since validity is guaranteed at compile time.
 
+\subsection{Empirical Results}
+
+To validate these expectations, we compiled all three implementations at -O2 optimization and analyzed the assembly output of the \texttt{file\_handle\_get\_data} function using objdump.
+
+\subsubsection{Methodology}
+
+Assembly analysis was performed by compiling each implementation to object files and disassembling with \texttt{objdump -d}. For each implementation, we extracted the \texttt{file\_handle\_get\_data} function and counted:
+
+\begin{enumerate}
+	\item \textbf{Total instructions}: All instructions in the function body
+	\item \textbf{Instruction categories}: Memory operations (\texttt{ldr}/\texttt{str}), conditional branches (\texttt{cmp}, \texttt{b.ne}, \texttt{cbz}), arithmetic operations (\texttt{mov}, \texttt{add}), and control flow (\texttt{ret})
+\end{enumerate}
+
+The defensive C implementation produced the following assembly:
+\begin{minted}[fontsize=\scriptsize]{gas}
+ldr  w8, [x0]        ; Load state field
+cmp  w8, #0x2        ; Compare to READABLE
+b.ne error           ; Branch if invalid
+ldr  w0, [x0, #4]    ; Load data
+ret
+error:
+mov  w0, #-1         ; Return error
+ret
+\end{minted}
+
+This yields 7 instructions: 2 memory operations, 2 branches (compare + conditional jump), 1 arithmetic operation, and 2 returns.
+
+The minimal C and Rust implementations both produced identical assembly:
+\begin{minted}[fontsize=\scriptsize]{gas}
+ldr  w0, [x0]        ; Load data directly
+ret
+\end{minted}
+
+This yields 2 instructions: 1 memory operation and 1 return, with zero conditional branches.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\columnwidth]{figures/instruction_count.pdf}
+	\caption{Total instruction count comparison at -O2. Rust matches minimal C with 2 instructions, while defensive C requires 7 instructions due to state validation overhead.}
+	\label{fig:instruction-count}
+\end{figure}
+
+Figure~\ref{fig:instruction-count} demonstrates that Rust achieves the same instruction count as minimal C—both implementations compile to exactly 2 instructions. The defensive C implementation requires 3.5 times more instructions due to explicit state checking logic.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\columnwidth]{figures/instruction_breakdown.pdf}
+	\caption{Instruction category breakdown. The critical finding: Rust has zero conditional branch instructions, matching minimal C, while defensive C includes 2 branch instructions for runtime state validation.}
+	\label{fig:instruction-breakdown}
+\end{figure}
+
+Figure~\ref{fig:instruction-breakdown} reveals the key insight: Rust's typestate implementation contains zero conditional branch instructions, identical to minimal C. The defensive C version includes 2 branch instructions—a compare (\texttt{cmp}) and conditional jump (\texttt{b.ne})—that verify state validity at runtime. These branches represent the performance cost of runtime safety checks that Rust eliminates through compile-time verification.
+
+The empirical results confirm the zero-cost abstraction principle: Rust's type-level state encoding produces assembly identical to unsafe C while providing compile-time safety guarantees equivalent to defensive C's runtime checks.
+
 \subsection{Implications for Security}
 
 Google's Android team reported that as the proportion of new memory-unsafe code decreased, memory safety vulnerabilities dropped from 76\% in 2019 to 35\% in 2022\cite{google_android}. While this correlation does not prove causation, it suggests that language choice significantly impacts vulnerability rates.
