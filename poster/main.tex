@@ -1,0 +1,283 @@
+% Gemini theme
+% See: https://rev.cs.uchicago.edu/k4rtik/gemini-uccs
+% A fork of https://github.com/anishathalye/gemini
+
+\documentclass[final]{beamer}
+
+% ====================
+% Packages
+% ====================
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[size=custom,width=70,height=100,scale=1.0]{beamerposter}
+\usetheme{gemini}
+\usecolortheme{uchicago}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+% ====================
+% Lengths
+% ====================
+
+% If you have N columns, choose \sepwidth and \colwidth such that
+% (N+1)*\sepwidth + N*\colwidth = \paperwidth
+\newlength{\sepwidth}
+\newlength{\colwidth}
+\setlength{\sepwidth}{0.02\paperwidth}
+\setlength{\colwidth}{0.47\paperwidth}
+
+\newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
+
+\newcommand{\Li}{\mathbf{L}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\cc}{\mathbf{c}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\App}{\mathbf{\tilde{A}}}
+\newcommand{\B}{\mathbf{B}}
+\newcommand{\C}{\mathbf{C}}
+\newcommand{\I}{\mathbf{I}}
+\newcommand{\Ro}{\mathbf{R}}
+\newcommand{\Kpp}{\mathbf{\tilde{K}}}
+\newcommand{\Ksu}{\mathbf{\bar{K}}}
+\newcommand{\K}{\mathbf{K}}
+\newcommand{\U}{\mathbf{U}}
+\newcommand{\Upp}{\mathbf{\tilde{U}}}
+\newcommand{\V}{\mathbf{V}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\Vpp}{\mathbf{\tilde{V}}}
+\newcommand{\W}{\mathbf{W}}
+\newcommand{\Q}{\mathbf{Q}}
+\newcommand{\X}{\mathbf{X}}
+\newcommand{\Y}{\mathbf{Y}}
+\newcommand{\T}{\mathbf{T}}
+\newcommand{\Sig}{\mathbf{\Sigma}}
+\newcommand\bigzero{\makebox(0,0){\text{\huge0}}}
+
+\newcommand{\Krein}{Kre\u{\i}n}
+\newcommand{\Nys}{Nystr\"om}
+
+% ====================
+% Title
+% ====================
+
+\title{Memory Efficient Kernel Approximation\\for Non-Stationary and Indefinite Kernels}
+
+\author{Simon Heilig \inst{1} \and Maximilian M\"unch \inst{1,2} \and Frank{-}Michael Schleif \inst{1}}
+
+\institute[shortinst]{\inst{1} University of Applied Sciences W\"urzburg-Schweinfurt \samelineand \inst{2} University of Groningen}
+
+% ====================
+% Footer (optional)
+% ====================
+
+\footercontent{
+\large
+  Supported by the Bavarian HighTech agenda and the W\"urzburg Center
+for Artificial Intelligence and Robotics (CAIRO)}
+% (can be left out to remove footer)
+
+% ====================
+% Logo (optional)
+% ====================
+
+% use this to include logos on the left and/or right side of the header:
+%\logoright{\includegraphics[height=2.8cm]{logos/rugr_logoen_wit_rgb.eps}}
+%\logoleft{\includegraphics[height=1.8cm]{logos/FHWS-Logo-2013_weiss_ohne-Name.png}}
+
+% ====================
+% Body
+% ====================
+\linespread{0.95}
+\begin{document}
+\addtobeamertemplate{headline}{}
+{
+    \begin{tikzpicture}[remember picture,overlay]
+      \node [anchor=north west, inner sep=3cm] at ([xshift=0.0cm,yshift=-4.0cm]current page.north west)
+      {\includegraphics[height=1.8cm]{logos/FHWS-Logo-2013_weiss_ohne-Name.png}};
+      \node [anchor=north east, inner sep=3cm] at ([xshift=0.0cm,yshift=-3.4cm]current page.north east)
+      {\includegraphics[height=2.8cm]{logos/rugr_logoen_wit_rgb.eps}};
+    \end{tikzpicture}
+}
+
+\begin{frame}[t]
+\begin{columns}[t]
+\separatorcolumn
+
+\begin{column}{\colwidth}
+    \begin{alertblock}{Take-Home Message}
+        \large
+        \textbf{Large scale machine learning:}
+        % \normalsize
+        \begin{itemize}
+            \item Runtime as well as memory issues arise from quadratic matrices which are central to many kernel models.
+            \item Kernel approximation is of high relevance in the age of large scale data. 
+        \end{itemize}
+        \vspace{1.0cm}
+        \textbf{Memory efficient kernel approximation (MEKA) from \cite{MEKA}:}
+        \begin{itemize}
+            \item achieves very low approximation error, but
+            \item results in non-positive definite approximations, and
+            \item is restricted to shift-invariant kernels
+        \end{itemize}
+        \vspace{1.0cm}
+        \large
+        \textbf{Challenges:}
+        \begin{itemize}
+            \item \textbf{To what extend does the MEKA approximation introduce indefiniteness?}
+            \item \textbf{How to extend the class of kernels used in MEKA, in particular to indefinite ones?}
+            \item \textbf{How to correct the approximation while maintaining the memory efficiency?}
+        \end{itemize}
+        \vspace{1.0cm}
+        \large
+        \textbf{Solution:}
+        \begin{itemize}
+            \item \textbf{Spherical normalization and indefinite Nystr\"om to extend the range of kernel functions}
+            \item \textbf{Lanczos-Iteration based spectrum shift}
+        \end{itemize}
+    \end{alertblock}
+    
+    \begin{block}{Introduction}
+  
+    \large
+    \heading{Initial situation:}
+      
+    Kernel matrices are the central object studied kernelized models such as support vector machine (SVM), kernel principal component analysis or Gaussian Process models. Common approaches are: 
+      
+    \begin{itemize}
+        \item Random Fourier Features explicitly approximate the kernel function %\cite{rksRahimi}
+        \item Nystr\"om methods work on arbitrary symmetric matrices and result in $O(n\hat{k})$ memory \cite{oglic2019scalable}%,cai2021fast
+        \item MEKA proposed by \cite{MEKA} minimizes the memory requirement to $O(nk + (ck)^2)$
+    \end{itemize}
+  
+  \end{block}
+  
+  \begin{block}{Analysis of MEKA}
+  \large
+  \begin{figure}
+      \begin{center}
+          \begin{tabular}{c c c}%0.32
+            \includegraphics[width=0.32\colwidth,height=0.32\colwidth]{IJCNN_Poster/images/polysphere_kernel_gesture.pdf}   &  \includegraphics[width=0.32\colwidth,height=0.32\colwidth]{IJCNN_Poster/images/MaxNegativeEigenval_tenC.pdf} & \includegraphics[width=0.32\colwidth,height=0.32\colwidth]{IJCNN_Poster/images/NumberNegativeEigenval_tenC.pdf}\\
+          \end{tabular}
+      \end{center}
+  \end{figure}
+  \heading{Key steps of MEKA:}%Equations?
+  \begin{enumerate}
+      \item Approximate c-means clustering in the input space
+      \item Nystr\"om approximation of \textit{diagonal} blocks
+      \item Least-Squares approximation of \textit{off-diagonal} blocks
+  \end{enumerate}
+  \heading{Observations:}
+  \begin{itemize}
+      \item Substantial negative eigenspace is present for $10^{-6} \le \gamma \le 1 $
+      \item When the matrix is close to full rank, it results in an increasing approximation error
+      \item Direct correlation between the target rank of the approximation and the number of negative eigenvalues
+  \end{itemize}
+  
+  
+  
+\end{block}
+\end{column}
+
+\separatorcolumn
+
+\begin{column}{\colwidth}
+\begin{block}{Extending the classes of kernels}
+\large
+\heading{Non-Stationary kernels}
+Normalizing the data to the unit sphere $\mathcal{S}^{d-1}$ implies that:\\$\|\x-\y\|_2^2 = 2 -2\langle\x,\y\rangle_2$,
+but the associated single variable function $k(\x - \y)$ can be non-psd, as shown for the polynomial kernel by \cite{pennington2015spherical}.
+\heading{Indefinite kernels}
+In the light of indefinite kernel functions all steps of MEKA are applicable in a bounded error, since it has been shown that Nystr\"om is also bounded in such cases \cite{oglic2019scalable}.
+\end{block}
+
+\begin{block}{Handling indefinite kernels}
+\large
+\heading{Sources of indefiniteness}
+\begin{itemize}
+    \item MEKA approximation of psd kernels
+    \item Spherical normalization for non-stationary kernels \cite{pennington2015spherical}
+    \item Domain specific similarity measures, e.g. protein sequence alignment or local learning (TL1 kernel) \cite{munchDataDriven}
+\end{itemize}
+
+
+\heading{Lanczos-Iteration based spectrum shift}
+    Correcting approximated matrix efficiently by $\Kpp = \Q\Li\Q^T + \lambda_{shift}\I$, iff. $\lambda_{shift} \ge |\lambda_{min}|$.
+    Where $\lambda_{shift}$ is obtained by:
+    \begin{equation*}
+    	\lambda_{shift} = \min_{\x \ne 0}\frac{\langle\x,\,\A\x\rangle}{\langle\x,\,\x\rangle},
+    \end{equation*}
+    while requiring only a matrix-times-vector multiplication, which is proportional to $O(nk + (ck)^2)$ due to the decomposition of MEKA.\\% \cite{cullum2002lanczos}.
+    Derived error bound for corrected approximation:
+    \begin{align*}
+    \|\K - (\Kpp + \lambda_{shift}\mathbf{I})\|_F &\leq \|\K^+ - \K^+_k\|_F  + \left(\frac{64k}{l}\right)^{\frac{1}{4}}n\K^+_{max}(1 +\theta)^{\frac{1}{2}}+ 2\|\Delta_+\|_F\\&+\|\K^- - \K^-_k\|_F  + \left(\frac{64k}{l}\right)^{\frac{1}{4}}n\K^-_{max}(1 +\theta)^{\frac{1}{2}}+ 2\|\Delta_-\|_F\\&+\sqrt{n}|\lambda_{shift}|
+\end{align*}
+\heading{Experimental validation}
+SVM classification accuracy ($\pm$ std.), where \textbf{n.c.} refers to \textit{not converged}.
+\begin{table}[]
+    \renewcommand{\arraystretch}{1.2}
+    \centering
+    \begin{tabular}{c|c|c|c|c}
+         & \multicolumn{2}{c|}{RBF Kernel} & \multicolumn{2}{c}{Sph. Poly. Kernel} \\
+         %unnormalized & spherical normalized
+        Dataset & MEKA & L-MEKA & MEKA & L-MEKA\\
+        \hline
+        
+        artificial &85.48 $\pm$ 11.93 & 89.23 $\pm$ 1.42&\textbf{n.c.}& 82.49 $\pm$ 1.03\\
+        cpusmall &\textbf{n.c.}& 86.47 $\pm$ 1.32&\textbf{n.c.}& 77.27 $\pm$ 1.76\\
+        pendigit &21.04 $\pm$ 12.88 &87.79 $\pm$ 2.54&39.23 $\pm$ 32.40&98.01 $\pm$ 0.56\\
+    \end{tabular}
+\end{table}
+\end{block}
+
+
+\begin{block}{Contact Information}
+
+\begin{columns}
+    \begin{column}{0.3\colwidth}
+    \vspace{1cm}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.2\colwidth]{images/simon.jpeg}
+        \end{figure}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.1\colwidth]{IJCNN_Poster/images/qrcode.png}
+        \end{figure}
+    \end{column}
+    \begin{column}{0.7\textwidth}
+        \begin{itemize}
+            \item[] \textbf{Simon Heilig}
+            \item[] University of Applied Sciences W\"urzburg-Schweinfurt
+            \item[] Email: simon99.heilig@gmail.com
+            \item[] Overview about indefinite learning at: http://promos-science.blogspot.com/
+            \item[] QR-Code for supplementary details and full paper
+        \end{itemize}
+    \end{column}
+\end{columns}
+
+\end{block}
+
+
+
+
+
+\begin{block}{References}
+    \vspace*{-0.25cm}
+    \nocite{*}
+    \footnotesize{\bibliographystyle{plain}\bibliography{poster}} % Data Driven Max Frontiers
+\end{block}
+
+\end{column}
+
+\separatorcolumn
+\end{columns}
+\end{frame}
+
+\end{document}
