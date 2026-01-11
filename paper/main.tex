@@ -81,7 +81,7 @@ However, C places the entire burden of correctness on the programmer. State mana
 
 This creates a fundamental tension. Defensive programming adds conditional branches that verify state before each operation, incurring runtime overhead.
 Omitting these checks improves performance but permits undefined behavior when invariants are violated.
-Higher-level languages like Java enforce safety through garbage collection and runtime checks, but their overhead makes them unsuitable for systems programming.
+Higher-level languages like Java enforce safety through garbage collection and runtime checks, but their overhead makes them unsuitable for most systems programming.
 
 Rust proposes a different approach: encoding invariants in the type system so that invalid programs fail to compile.
 The language's ownership system prevents use-after-free and data races at compile time\cite{rust_embedded}.
