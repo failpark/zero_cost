@@ -1,6 +1,6 @@
 % Gemini theme
-% See: https://rev.cs.uchicago.edu/k4rtik/gemini-uccs
-% A fork of https://github.com/anishathalye/gemini
+% Adapted for: Compile-Time vs. Runtime Trade-offs in Systems Programming
+% Authors: Daniel Borgs, Shiwei Cui, Tylan Yildirim
 
 \documentclass[final]{beamer}
 
@@ -17,79 +17,50 @@
 \usepackage{booktabs}
 \usepackage{tikz}
 \usepackage{pgfplots}
+\usepackage{svg}
+\usepackage{minted}
+\usepackage{xcolor}
 \pgfplotsset{compat=1.17}
+
+% ====================
+% Code Listings Style
+% ====================
+\setminted{
+	fontsize=\small,
+	breaklines=true,
+	frame=none,
+	xleftmargin=0pt
+}
 
 % ====================
 % Lengths
 % ====================
 
-% If you have N columns, choose \sepwidth and \colwidth such that
-% (N+1)*\sepwidth + N*\colwidth = \paperwidth
 \newlength{\sepwidth}
 \newlength{\colwidth}
 \setlength{\sepwidth}{0.02\paperwidth}
 \setlength{\colwidth}{0.47\paperwidth}
 
 \newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
-
-\newcommand{\Li}{\mathbf{L}}
-\newcommand{\R}{\mathbb{R}}
-\newcommand{\cc}{\mathbf{c}}
-\newcommand{\x}{\mathbf{x}}
-\newcommand{\y}{\mathbf{y}}
-\newcommand{\z}{\mathbf{z}}
-\newcommand{\A}{\mathbf{A}}
-\newcommand{\App}{\mathbf{\tilde{A}}}
-\newcommand{\B}{\mathbf{B}}
-\newcommand{\C}{\mathbf{C}}
-\newcommand{\I}{\mathbf{I}}
-\newcommand{\Ro}{\mathbf{R}}
-\newcommand{\Kpp}{\mathbf{\tilde{K}}}
-\newcommand{\Ksu}{\mathbf{\bar{K}}}
-\newcommand{\K}{\mathbf{K}}
-\newcommand{\U}{\mathbf{U}}
-\newcommand{\Upp}{\mathbf{\tilde{U}}}
-\newcommand{\V}{\mathbf{V}}
-\newcommand{\vv}{\mathbf{v}}
-\newcommand{\Vpp}{\mathbf{\tilde{V}}}
-\newcommand{\W}{\mathbf{W}}
-\newcommand{\Q}{\mathbf{Q}}
-\newcommand{\X}{\mathbf{X}}
-\newcommand{\Y}{\mathbf{Y}}
-\newcommand{\T}{\mathbf{T}}
-\newcommand{\Sig}{\mathbf{\Sigma}}
-\newcommand\bigzero{\makebox(0,0){\text{\huge0}}}
-
-\newcommand{\Krein}{Kre\u{\i}n}
-\newcommand{\Nys}{Nystr\"om}
+\renewcommand{\heading}[1]{\vspace{0.5em}\textbf{#1}\vspace{0.3em}\\}
 
 % ====================
 % Title
 % ====================
 
-\title{Memory Efficient Kernel Approximation\\for Non-Stationary and Indefinite Kernels}
+\title{Compile-Time vs.\ Runtime Trade-offs\\in Systems Programming}
 
-\author{Simon Heilig \inst{1} \and Maximilian M\"unch \inst{1,2} \and Frank{-}Michael Schleif \inst{1}}
+\author{Daniel Borgs \and Shiwei Cui \and Tylan Yildirim}
 
-\institute[shortinst]{\inst{1} University of Applied Sciences W\"urzburg-Schweinfurt \samelineand \inst{2} University of Groningen}
+\institute[shortinst]{Technical University of Applied Sciences W\"urzburg-Schweinfurt}
 
 % ====================
-% Footer (optional)
+% Footer
 % ====================
 
 \footercontent{
 \large
-  Supported by the Bavarian HighTech agenda and the W\"urzburg Center
-for Artificial Intelligence and Robotics (CAIRO)}
-% (can be left out to remove footer)
-
-% ====================
-% Logo (optional)
-% ====================
-
-% use this to include logos on the left and/or right side of the header:
-%\logoright{\includegraphics[height=2.8cm]{logos/rugr_logoen_wit_rgb.eps}}
-%\logoleft{\includegraphics[height=1.8cm]{logos/FHWS-Logo-2013_weiss_ohne-Name.png}}
+  Introduction to Scientific Research and Writing -- Winter Semester 2025/26}
 
 % ====================
 % Body
@@ -98,181 +69,222 @@ for Artificial Intelligence and Robotics (CAIRO)}
 \begin{document}
 \addtobeamertemplate{headline}{}
 {
-    \begin{tikzpicture}[remember picture,overlay]
-      \node [anchor=north west, inner sep=3cm] at ([xshift=0.0cm,yshift=-4.0cm]current page.north west)
-      {\includegraphics[height=1.8cm]{logos/FHWS-Logo-2013_weiss_ohne-Name.png}};
-      \node [anchor=north east, inner sep=3cm] at ([xshift=0.0cm,yshift=-3.4cm]current page.north east)
-      {\includegraphics[height=2.8cm]{logos/rugr_logoen_wit_rgb.eps}};
-    \end{tikzpicture}
+	\begin{tikzpicture}[remember picture,overlay]
+	  \node [anchor=north west, inner sep=3cm] at ([xshift=0.0cm,yshift=-3.0cm]current page.north west)
+	  {\includesvg[height=2.2cm,inkscapelatex=false]{logos/THWS.svg}};
+	\end{tikzpicture}
 }
 
-\begin{frame}[t]
+\begin{frame}[t,fragile]
 \begin{columns}[t]
 \separatorcolumn
 
 \begin{column}{\colwidth}
-    \begin{alertblock}{Take-Home Message}
-        \large
-        \textbf{Large scale machine learning:}
-        % \normalsize
-        \begin{itemize}
-            \item Runtime as well as memory issues arise from quadratic matrices which are central to many kernel models.
-            \item Kernel approximation is of high relevance in the age of large scale data. 
-        \end{itemize}
-        \vspace{1.0cm}
-        \textbf{Memory efficient kernel approximation (MEKA) from \cite{MEKA}:}
-        \begin{itemize}
-            \item achieves very low approximation error, but
-            \item results in non-positive definite approximations, and
-            \item is restricted to shift-invariant kernels
-        \end{itemize}
-        \vspace{1.0cm}
-        \large
-        \textbf{Challenges:}
-        \begin{itemize}
-            \item \textbf{To what extend does the MEKA approximation introduce indefiniteness?}
-            \item \textbf{How to extend the class of kernels used in MEKA, in particular to indefinite ones?}
-            \item \textbf{How to correct the approximation while maintaining the memory efficiency?}
-        \end{itemize}
-        \vspace{1.0cm}
-        \large
-        \textbf{Solution:}
-        \begin{itemize}
-            \item \textbf{Spherical normalization and indefinite Nystr\"om to extend the range of kernel functions}
-            \item \textbf{Lanczos-Iteration based spectrum shift}
-        \end{itemize}
-    \end{alertblock}
-    
-    \begin{block}{Introduction}
+
+	\begin{alertblock}{Take-Home Message}
+		\large
+		\textbf{The Safety-Performance Dilemma}
+		
+		Programs must ensure operations happen in valid order. A file must be opened before reading. Traditional solutions force a choice:
+		\begin{itemize}
+			\item \textbf{Safe code}: Check validity at runtime $\rightarrow$ slower execution
+			\item \textbf{Fast code}: Skip checks $\rightarrow$ risk of crashes and security holes
+		\end{itemize}
+		\vspace{0.8cm}
+		
+		\textbf{Our Question:} Can we get safety \textit{without} paying the runtime cost?
+		\vspace{0.8cm}
+		
+		\textbf{Key Finding:} \textbf{Yes.} Rust's type system catches invalid operations during compilation. The resulting program runs as fast as code with no safety checks---while preventing errors that would crash unsafe code.
+	\end{alertblock}
+	
+	\begin{block}{Problem Statement}
+		\large
+		\heading{Why This Matters}
+		
+		Memory safety bugs dominate security vulnerabilities:
+		\begin{itemize}
+			\item 70\% of Microsoft's security issues stem from memory safety problems
+			\item The Heartbleed bug (2014) exposed millions of servers due to one missing bounds check
+			\item The US government now recommends memory-safe languages
+		\end{itemize}
+		
+		\heading{The Core Tension}
+		
+		Systems code (operating systems, databases, embedded devices) requires maximum performance. Safety checks consume CPU cycles. Developers face an uncomfortable choice: \textbf{safe or fast?}
+		
+		\heading{State Management}
+		
+		Many bugs arise from \textit{state violations}: using an object incorrectly for its current state. Reading from a closed file handle causes undefined behavior---the program might crash, corrupt data, or create a security hole.
+	\end{block}
   
-    \large
-    \heading{Initial situation:}
-      
-    Kernel matrices are the central object studied kernelized models such as support vector machine (SVM), kernel principal component analysis or Gaussian Process models. Common approaches are: 
-      
-    \begin{itemize}
-        \item Random Fourier Features explicitly approximate the kernel function %\cite{rksRahimi}
-        \item Nystr\"om methods work on arbitrary symmetric matrices and result in $O(n\hat{k})$ memory \cite{oglic2019scalable}%,cai2021fast
-        \item MEKA proposed by \cite{MEKA} minimizes the memory requirement to $O(nk + (ck)^2)$
-    \end{itemize}
-  
-  \end{block}
-  
-  \begin{block}{Analysis of MEKA}
-  \large
-  \begin{figure}
-      \begin{center}
-          \begin{tabular}{c c c}%0.32
-            \includegraphics[width=0.32\colwidth,height=0.32\colwidth]{images/polysphere_kernel_gesture.pdf}   &  \includegraphics[width=0.32\colwidth,height=0.32\colwidth]{images/MaxNegativeEigenval_tenC.pdf} & \includegraphics[width=0.32\colwidth,height=0.32\colwidth]{images/NumberNegativeEigenval_tenC.pdf}\\
-          \end{tabular}
-      \end{center}
-  \end{figure}
-  \heading{Key steps of MEKA:}%Equations?
-  \begin{enumerate}
-      \item Approximate c-means clustering in the input space
-      \item Nystr\"om approximation of \textit{diagonal} blocks
-      \item Least-Squares approximation of \textit{off-diagonal} blocks
-  \end{enumerate}
-  \heading{Observations:}
-  \begin{itemize}
-      \item Substantial negative eigenspace is present for $10^{-6} \le \gamma \le 1 $
-      \item When the matrix is close to full rank, it results in an increasing approximation error
-      \item Direct correlation between the target rank of the approximation and the number of negative eigenvalues
-  \end{itemize}
-  
-  
-  
+	\begin{block}{Background: What Is a State Machine?}
+		\large
+		\heading{Definition}
+		
+		A \textbf{state machine} defines: (1) states an object can be in, (2) valid transitions between states, and (3) operations permitted in each state.
+		
+		\begin{figure}
+			\centering
+			\includesvg[width=0.85\colwidth,inkscapelatex=false]{../paper/svg/state_machine.svg}
+		\end{figure}
+		
+		\heading{The Verification Problem}
+		
+		How do we ensure programs follow these rules?
+		
+		\begin{table}[]
+			\renewcommand{\arraystretch}{1.3}
+			\centering
+			\begin{tabular}{l|l|l}
+				\textbf{Approach} & \textbf{When Checked} & \textbf{Cost} \\
+				\hline
+				Runtime checks & During execution & CPU cycles, branches \\
+				Documentation & Never (honor system) & Zero, but unsafe \\
+				Type system & During compilation & \textbf{Zero at runtime} \\
+			\end{tabular}
+		\end{table}
+	\end{block}
+
+	\begin{block}{Three Implementations}
+		\large
+		We implemented the same file handle state machine three ways:
+		
+\heading{A. Defensive C --- Safe but Slow}
+\begin{minted}{c}
+int read_file(file_handle_t* h) {
+	if (h->state != STATE_OPEN)   // runtime check
+		return -1;				 // branch if invalid
+	h->state = STATE_READABLE;
+	h->data = 42;
+	return h->data;
+}
+\end{minted}
+
+		\heading{B. Minimal C --- Fast but Unsafe}
+\begin{minted}{c}
+int read_file(file_handle_t* h) {
+	h->data = 42;	// no check -- undefined behavior if invalid
+	return h->data;
+}
+\end{minted}
+
+\heading{C. Rust Typestate --- Safe AND Fast}
+\begin{minted}{rust}
+impl FileHandle<Open> {
+	fn read(self) -> FileHandle<Readable> {
+		FileHandle { data: 42, _state: PhantomData }
+	}
+}
+// read() only exists for FileHandle<Open>
+// Calling on FileHandle<Closed> = compile error
+\end{minted}
 \end{block}
+
 \end{column}
 
 \separatorcolumn
 
 \begin{column}{\colwidth}
-\begin{block}{Extending the classes of kernels}
-\large
-\heading{Non-Stationary kernels}
-Normalizing the data to the unit sphere $\mathcal{S}^{d-1}$ implies that:\\$\|\x-\y\|_2^2 = 2 -2\langle\x,\y\rangle_2$,
-but the associated single variable function $k(\x - \y)$ can be non-psd, as shown for the polynomial kernel by \cite{pennington2015spherical}.
-\heading{Indefinite kernels}
-In the light of indefinite kernel functions all steps of MEKA are applicable in a bounded error, since it has been shown that Nystr\"om is also bounded in such cases \cite{oglic2019scalable}.
-\end{block}
 
-\begin{block}{Handling indefinite kernels}
-\large
-\heading{Sources of indefiniteness}
-\begin{itemize}
-    \item MEKA approximation of psd kernels
-    \item Spherical normalization for non-stationary kernels \cite{pennington2015spherical}
-    \item Domain specific similarity measures, e.g. protein sequence alignment or local learning (TL1 kernel) \cite{munchDataDriven}
-\end{itemize}
+	\begin{block}{The Typestate Pattern Explained}
+		\large
+		\heading{Core Idea}
+		
+		Instead of one \texttt{FileHandle} type with a state field, create separate types:
+		\texttt{FileHandle<Closed>}, \texttt{FileHandle<Open>}, \texttt{FileHandle<Readable>}.
+		
+		\heading{How It Prevents Errors}
+		
+		The \texttt{read()} method is defined \textit{only} for \texttt{FileHandle<Open>}. Attempting to call \texttt{read()} on a \texttt{FileHandle<Closed>} produces a \textbf{compile-time error}---the method does not exist for that type.
+		
+		\heading{Why Zero Cost?}
+		
+		The state marker (\texttt{<Open>}, \texttt{<Closed>}) exists only for the compiler. It occupies \textbf{zero bytes} in memory and generates \textbf{zero instructions}. After compilation, the type information is erased---only the operations remain.
+	\end{block}
 
+	\begin{block}{Results: Assembly Comparison}
+		\large
+		\heading{Methodology}
+		
+		Compiled all three versions at \texttt{-O2} optimization, analyzed generated ARM64 assembly, counted total instructions and conditional branches.
+		
+		\begin{figure}
+			\centering
+			\begin{tabular}{c c}
+				\includegraphics[width=0.48\colwidth]{../paper/figures/instruction_count.pdf} &
+				\includegraphics[width=0.48\colwidth]{../paper/figures/instruction_breakdown.pdf}
+			\end{tabular}
+		\end{figure}
+		
+		\heading{Key Observations}
+		\begin{itemize}
+			\item \textbf{Rust matches Minimal C exactly}: 2 instructions, 0 branches
+			\item \textbf{Defensive C has 3.5$\times$ overhead}: Extra instructions for state validation
+			\item \textbf{Critical}: Rust has \textbf{zero conditional branches}---the compiler \textit{proved} they were unnecessary
+		\end{itemize}
+		
+		\begin{figure}
+			\centering
+			\includegraphics[width=0.7\colwidth]{../paper/figures/overhead_ratio.pdf}
+		\end{figure}
+	\end{block}
 
-\heading{Lanczos-Iteration based spectrum shift}
-    Correcting approximated matrix efficiently by $\Kpp = \Q\Li\Q^T + \lambda_{shift}\I$, iff. $\lambda_{shift} \ge |\lambda_{min}|$.
-    Where $\lambda_{shift}$ is obtained by:
-    \begin{equation*}
-    	\lambda_{shift} = \min_{\x \ne 0}\frac{\langle\x,\,\A\x\rangle}{\langle\x,\,\x\rangle},
-    \end{equation*}
-    while requiring only a matrix-times-vector multiplication, which is proportional to $O(nk + (ck)^2)$ due to the decomposition of MEKA.\\% \cite{cullum2002lanczos}.
-    Derived error bound for corrected approximation:
-    \begin{align*}
-    \|\K - (\Kpp + \lambda_{shift}\mathbf{I})\|_F &\leq \|\K^+ - \K^+_k\|_F  + \left(\frac{64k}{l}\right)^{\frac{1}{4}}n\K^+_{max}(1 +\theta)^{\frac{1}{2}}+ 2\|\Delta_+\|_F\\&+\|\K^- - \K^-_k\|_F  + \left(\frac{64k}{l}\right)^{\frac{1}{4}}n\K^-_{max}(1 +\theta)^{\frac{1}{2}}+ 2\|\Delta_-\|_F\\&+\sqrt{n}|\lambda_{shift}|
-\end{align*}
-\heading{Experimental validation}
-SVM classification accuracy ($\pm$ std.), where \textbf{n.c.} refers to \textit{not converged}.
-\begin{table}[]
-    \renewcommand{\arraystretch}{1.2}
-    \centering
-    \begin{tabular}{c|c|c|c|c}
-         & \multicolumn{2}{c|}{RBF Kernel} & \multicolumn{2}{c}{Sph. Poly. Kernel} \\
-         %unnormalized & spherical normalized
-        Dataset & MEKA & L-MEKA & MEKA & L-MEKA\\
-        \hline
-        
-        artificial &85.48 $\pm$ 11.93 & 89.23 $\pm$ 1.42&\textbf{n.c.}& 82.49 $\pm$ 1.03\\
-        cpusmall &\textbf{n.c.}& 86.47 $\pm$ 1.32&\textbf{n.c.}& 77.27 $\pm$ 1.76\\
-        pendigit &21.04 $\pm$ 12.88 &87.79 $\pm$ 2.54&39.23 $\pm$ 32.40&98.01 $\pm$ 0.56\\
-    \end{tabular}
-\end{table}
-\end{block}
+	\begin{block}{Trade-off Thinking in Computer Science}
+		\large
+		\heading{A Unifying Principle}
+		
+		The compile-time vs.\ runtime trade-off appears throughout CS. Doing work \textit{earlier} often saves work \textit{later}.
+		
+		\begin{figure}
+			\centering
+			\includesvg[width=0.95\colwidth,inkscapelatex=false]{../paper/svg/simple_spectrum.svg}
+		\end{figure}
+		
+		\heading{Three Examples from Our Group}
+		
+		\begin{table}[]
+			\renewcommand{\arraystretch}{1.4}
+			\centering
+			\begin{tabular}{l|l|l}
+				\textbf{Topic} & \textbf{Early Work} & \textbf{Late Savings} \\
+				\hline
+				Rust Typestate & Compiler verifies state & No runtime checks \\
+				Huffman Coding (Tylan) & Build frequency tree & Shorter transmission \\
+				Database Indexes (Shiwei) & B-Tree write overhead & Faster reads \\
+			\end{tabular}
+		\end{table}
+	\end{block}
 
+	\begin{block}{Conclusion}
+		\large
+		\heading{Main Result}
+		
+		Rust's typestate pattern achieves \textbf{zero-cost safety}: compile-time type checking eliminates runtime overhead while preventing invalid state transitions.
+		
+		\heading{Implications}
+		\begin{enumerate}
+			\item The safety-performance trade-off is \textbf{not fundamental}
+			\item Sufficiently expressive type systems move verification cost to compilation
+			\item This principle extends beyond memory safety to protocol correctness
+		\end{enumerate}
+		
+		\heading{Broader Lesson}
+		
+		Computer science repeatedly faces ``when to pay the cost'' decisions. Understanding these trade-offs---compile vs.\ run, write vs.\ read, encode vs.\ transmit---enables better engineering choices.
+	\end{block}
 
-\begin{block}{Contact Information}
-
-\begin{columns}
-    \begin{column}{0.3\colwidth}
-    \vspace{1cm}
-        \begin{figure}
-            \centering
-            \includegraphics[width=0.2\colwidth]{images/simon.jpeg}
-        \end{figure}
-        \begin{figure}
-            \centering
-            \includegraphics[width=0.1\colwidth]{images/qrcode.png}
-        \end{figure}
-    \end{column}
-    \begin{column}{0.7\textwidth}
-        \begin{itemize}
-            \item[] \textbf{Simon Heilig}
-            \item[] University of Applied Sciences W\"urzburg-Schweinfurt
-            \item[] Email: simon99.heilig@gmail.com
-            \item[] Overview about indefinite learning at: http://promos-science.blogspot.com/
-            \item[] QR-Code for supplementary details and full paper
-        \end{itemize}
-    \end{column}
-\end{columns}
-
-\end{block}
-
-
-
-
-
-\begin{block}{References}
-    \vspace*{-0.25cm}
-    \nocite{*}
-    \footnotesize{\bibliographystyle{plain}\bibliography{poster}} % Data Driven Max Frontiers
-\end{block}
+	\begin{block}{References}
+		\footnotesize
+		\begin{enumerate}
+			\item CWE -- 2024 CWE Top 10 KEV Weaknesses. \texttt{cwe.mitre.org}
+			\item Microsoft Security Response Center: ``We need a safer systems programming language'' (2019)
+			\item CISA: ``The urgent need for memory safety in software products'' (2024)
+			\item R.\ E.\ Strom \& S.\ Yemini: ``Typestate: A programming language concept for enhancing software reliability.'' \textit{IEEE TSE}, 1986.
+			\item Rust Embedded Working Group: ``Zero cost abstractions.'' \texttt{doc.rust-lang.org}
+			\item Google Security Blog: ``Memory safe languages in Android 13'' (2022)
+		\end{enumerate}
+	\end{block}
 
 \end{column}
 

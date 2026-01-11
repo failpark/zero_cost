@@ -2,5 +2,12 @@ _default:
 	@just --list
 
 compile:
-	latexmk -lualatex -output-directory=out -interaction=nonstopmode main.tex
+	source ../paper/.venv/bin/activate && \
+	latexmk -lualatex -output-directory=out -interaction=nonstopmode -shell-escape main.tex
 	mv out/main.pdf .
+
+open:
+	open main.pdf
+
+clean:
+	rm -rf out

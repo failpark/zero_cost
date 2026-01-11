@@ -1,0 +1,48 @@
+@startuml state_machine
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam state {
+	BackgroundColor #E8E8E8
+	BorderColor #333333
+	FontSize 14
+	FontName Arial
+}
+skinparam arrow {
+	Color #333333
+	FontSize 12
+}
+
+title File Handle State Machine
+
+[*] --> Closed : create()
+
+state Closed #LightBlue {
+}
+
+state Open #LightGreen {
+}
+
+state Readable #LightYellow {
+}
+
+Closed --> Open : open()
+Open --> Readable : read()
+Readable --> Closed : close()
+Open --> Closed : close()
+
+note right of Closed
+  No file associated.
+  Only valid operation: open()
+end note
+
+note right of Open
+  File ready for operations.
+  Valid: read(), close()
+end note
+
+note right of Readable
+  Data loaded into buffer.
+  Valid: get_data(), close()
+end note
+
+@enduml

@@ -1,0 +1,61 @@
+@startuml tradeoff_spectrum
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam rectangle {
+	BorderColor #333333
+	FontSize 12
+}
+skinparam arrow {
+	Color #666666
+}
+
+title When to Pay the Cost: A Computer Science Pattern
+
+rectangle "**COMPILE TIME**\n//Work done once,\nbefore execution//" as CT #CCE5FF
+rectangle "**WRITE TIME**\n//Work done when\ndata is stored//" as WT #CCFFCC  
+rectangle "**ENCODE TIME**\n//Work done before\ntransmission//" as ET #FFFFCC
+rectangle "**RUN TIME**\n//Work done during\nexecution//" as RT #FFCCCC
+rectangle "**READ TIME**\n//Work done when\ndata is accessed//" as RDT #FFCCCC
+
+CT -right-> WT
+WT -right-> ET
+ET -right-> RT
+RT -right-> RDT
+
+rectangle "Rust\nTypestate" as R1 #CCE5FF
+rectangle "B-Tree\nIndex" as R2 #CCFFCC
+rectangle "Huffman\nTree" as R3 #FFFFCC
+rectangle "Defensive C\nRuntime Checks" as R4 #FFCCCC
+rectangle "Hash Index\nPoint Lookup" as R5 #FFCCCC
+
+CT .. R1
+WT .. R2
+ET .. R3
+RT .. R4
+RDT .. R5
+
+note bottom of CT
+  **Rust**: Type checker
+  proves correctness.
+  Zero runtime cost.
+end note
+
+note bottom of WT
+  **B-Tree**: Maintain sorted
+  structure on insert.
+  Fast range queries later.
+end note
+
+note bottom of ET
+  **Huffman**: Build frequency
+  table upfront.
+  Shorter messages later.
+end note
+
+note bottom of RT
+  **Defensive C**: Check
+  state every operation.
+  3.5× instruction overhead.
+end note
+
+@enduml

@@ -3,6 +3,7 @@ _default:
 
 open:
 	open paper/main.pdf
+	open poster/main.pdf
 
 fmt:
 	cd rust && just fmt

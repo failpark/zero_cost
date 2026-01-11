@@ -1,0 +1,91 @@
+%% Creator: Inkscape 1.4.3 (0d15f75, 2025-12-25), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'simple_spectrum_svg-tex.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{541.00708008bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.6352371)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0.12806657,0.61303323){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{Trade-off Spectrum: When Does the Work Happen?}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.29120428,0.49331289){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{Rust typestate}\end{tabular}}}}%
+    \put(0.29120428,0.47099522){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Compiler proves validity\end{tabular}}}}%
+    \put(0.29120428,0.44867767){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}→ 0 runtime cost\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.0288207,0.47099522){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Compile-time verification\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.26801488,0.39863405){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{B-Tree indexes}\end{tabular}}}}%
+    \put(0.26801488,0.3763165){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Maintain order on insert\end{tabular}}}}%
+    \put(0.26801488,0.35399883){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}→ Fast reads later\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.05201009,0.3763165){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Write-time indexing\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.29715097,0.30395519){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{Huffman coding}\end{tabular}}}}%
+    \put(0.29715097,0.28163768){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Build frequency tree\end{tabular}}}}%
+    \put(0.29715097,0.25931996){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}→ Shorter transmission\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.02287401,0.28163768){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Encode-time compression\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.78042456,0.20927635){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{Defensive C}\end{tabular}}}}%
+    \put(0.78042456,0.1869588){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Check state every call\end{tabular}}}}%
+    \put(0.78042456,0.16464112){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}→ 3.5× overhead\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.56979307,0.1869588){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Run-time checking\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.80038719,0.1145975){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{Full table scan}\end{tabular}}}}%
+    \put(0.80038719,0.09227996){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}No index overhead\end{tabular}}}}%
+    \put(0.80038719,0.06996228){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}→ Slow queries\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.54983044,0.09227996){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Read-time computation\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{simple_spectrum_svg-tex.pdf}}%
+    \put(0.17250342,0.57108258){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Early (One-time cost)\end{tabular}}}}%
+    \put(0.67219778,0.57108258){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Late (Repeated cost)\end{tabular}}}}%
+  \end{picture}%
+\endgroup%

@@ -1,0 +1,24 @@
+@startuml simple_spectrum
+!theme plain
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+
+title Trade-off Spectrum: When Does the Work Happen?
+
+|Early (One-time cost)|
+start
+:Compile-time verification;
+note right: **Rust typestate**\nCompiler proves validity\n→ 0 runtime cost
+:Write-time indexing;
+note right: **B-Tree indexes**\nMaintain order on insert\n→ Fast reads later
+:Encode-time compression;
+note right: **Huffman coding**\nBuild frequency tree\n→ Shorter transmission
+|Late (Repeated cost)|
+:Run-time checking;
+note right: **Defensive C**\nCheck state every call\n→ 3.5× overhead
+:Read-time computation;
+note right: **Full table scan**\nNo index overhead\n→ Slow queries
+stop
+
+@enduml
