@@ -59,8 +59,8 @@
 % ====================
 
 \footercontent{
-\large
-  Introduction to Scientific Research and Writing -- Winter Semester 2025/26}
+  Professional Skills -- Winter Semester 2025/26
+}
 
 % ====================
 % Body
@@ -121,18 +121,24 @@
 	\begin{block}{Background: What Is a State Machine?}
 		\large
 		\heading{Definition}
-		
+
 		A \textbf{state machine} defines: (1) states an object can be in, (2) valid transitions between states, and (3) operations permitted in each state.
-		
+
 		\begin{figure}
 			\centering
-			\includesvg[width=0.85\colwidth,inkscapelatex=false]{../paper/svg/state_machine.svg}
+			\includesvg[width=0.9\colwidth,inkscapelatex=false]{../paper/svg/state_machine.svg}
 		\end{figure}
-		
-		\heading{The Verification Problem}
-		
-		How do we ensure programs follow these rules?
-		
+	\end{block}
+\end{column}
+
+\separatorcolumn
+
+\begin{column}{\colwidth}
+
+	\begin{block}{The Verification Problem}
+		\large
+		How do we ensure programs follow state machine rules?
+
 		\begin{table}[]
 			\renewcommand{\arraystretch}{1.3}
 			\centering
@@ -145,47 +151,6 @@
 			\end{tabular}
 		\end{table}
 	\end{block}
-
-	\begin{block}{Three Implementations}
-		\large
-		We implemented the same file handle state machine three ways:
-		
-\heading{A. Defensive C --- Safe but Slow}
-\begin{minted}{c}
-int read_file(file_handle_t* h) {
-	if (h->state != STATE_OPEN)   // runtime check
-		return -1;				 // branch if invalid
-	h->state = STATE_READABLE;
-	h->data = 42;
-	return h->data;
-}
-\end{minted}
-
-		\heading{B. Minimal C --- Fast but Unsafe}
-\begin{minted}{c}
-int read_file(file_handle_t* h) {
-	h->data = 42;	// no check -- undefined behavior if invalid
-	return h->data;
-}
-\end{minted}
-
-\heading{C. Rust Typestate --- Safe AND Fast}
-\begin{minted}{rust}
-impl FileHandle<Open> {
-	fn read(self) -> FileHandle<Readable> {
-		FileHandle { data: 42, _state: PhantomData }
-	}
-}
-// read() only exists for FileHandle<Open>
-// Calling on FileHandle<Closed> = compile error
-\end{minted}
-\end{block}
-
-\end{column}
-
-\separatorcolumn
-
-\begin{column}{\colwidth}
 
 	\begin{block}{The Typestate Pattern Explained}
 		\large
@@ -223,37 +188,6 @@ impl FileHandle<Open> {
 			\item \textbf{Defensive C has 3.5$\times$ overhead}: Extra instructions for state validation
 			\item \textbf{Critical}: Rust has \textbf{zero conditional branches}---the compiler \textit{proved} they were unnecessary
 		\end{itemize}
-		
-		\begin{figure}
-			\centering
-			\includegraphics[width=0.7\colwidth]{../paper/figures/overhead_ratio.pdf}
-		\end{figure}
-	\end{block}
-
-	\begin{block}{Trade-off Thinking in Computer Science}
-		\large
-		\heading{A Unifying Principle}
-		
-		The compile-time vs.\ runtime trade-off appears throughout CS. Doing work \textit{earlier} often saves work \textit{later}.
-		
-		\begin{figure}
-			\centering
-			\includesvg[width=0.95\colwidth,inkscapelatex=false]{../paper/svg/simple_spectrum.svg}
-		\end{figure}
-		
-		\heading{Three Examples from Our Group}
-		
-		\begin{table}[]
-			\renewcommand{\arraystretch}{1.4}
-			\centering
-			\begin{tabular}{l|l|l}
-				\textbf{Topic} & \textbf{Early Work} & \textbf{Late Savings} \\
-				\hline
-				Rust Typestate & Compiler verifies state & No runtime checks \\
-				Huffman Coding (Tylan) & Build frequency tree & Shorter transmission \\
-				Database Indexes (Shiwei) & B-Tree write overhead & Faster reads \\
-			\end{tabular}
-		\end{table}
 	\end{block}
 
 	\begin{block}{Conclusion}
@@ -277,12 +211,10 @@ impl FileHandle<Open> {
 	\begin{block}{References}
 		\footnotesize
 		\begin{enumerate}
-			\item CWE -- 2024 CWE Top 10 KEV Weaknesses. \texttt{cwe.mitre.org}
 			\item Microsoft Security Response Center: ``We need a safer systems programming language'' (2019)
 			\item CISA: ``The urgent need for memory safety in software products'' (2024)
 			\item R.\ E.\ Strom \& S.\ Yemini: ``Typestate: A programming language concept for enhancing software reliability.'' \textit{IEEE TSE}, 1986.
 			\item Rust Embedded Working Group: ``Zero cost abstractions.'' \texttt{doc.rust-lang.org}
-			\item Google Security Blog: ``Memory safe languages in Android 13'' (2022)
 		\end{enumerate}
 	\end{block}
 

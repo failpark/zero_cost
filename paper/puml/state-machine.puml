@@ -12,7 +12,7 @@ skinparam arrow {
 	FontSize 12
 }
 
-title File Handle State Machine
+' title File Handle State Machine
 
 [*] --> Closed : create()
 
