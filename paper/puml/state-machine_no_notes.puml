@@ -1,0 +1,31 @@
+@startuml state_machine_no_notes
+!theme plain
+
+top to bottom direction
+
+skinparam backgroundColor #FEFEFE
+skinparam state {
+	BackgroundColor #E8E8E8
+	BorderColor #333333
+}
+skinparam arrow {
+	Color #333333
+}
+
+[*] -> Closed : create()
+
+state Closed #LightBlue {
+}
+
+state Open #LightGreen {
+}
+
+state Readable #LightYellow {
+}
+
+Closed -> Open : open()
+Open -> Readable : read()
+Readable -> Closed : close()
+Open -down-> Closed : close()
+
+@enduml
