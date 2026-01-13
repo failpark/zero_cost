@@ -4,17 +4,12 @@ skinparam backgroundColor #FEFEFE
 skinparam state {
 	BackgroundColor #E8E8E8
 	BorderColor #333333
-	FontSize 14
-	FontName Arial
 }
 skinparam arrow {
 	Color #333333
-	FontSize 12
 }
 
-' title File Handle State Machine
-
-[*] --> Closed : create()
+[*] -> Closed : create()
 
 state Closed #LightBlue {
 }
@@ -25,24 +20,19 @@ state Open #LightGreen {
 state Readable #LightYellow {
 }
 
-Closed --> Open : open()
-Open --> Readable : read()
-Readable --> Closed : close()
+Closed -> Open : open()
+Open -> Readable : read()
+Readable -> Closed : close()
 Open --> Closed : close()
 
 note right of Closed
-  No file associated.
-  Only valid operation: open()
+  No file associated
 end note
 
-note right of Open
-  File ready for operations.
-  Valid: read(), close()
-end note
+note bottom of Open : File ready for operations
 
 note right of Readable
-  Data loaded into buffer.
-  Valid: get_data(), close()
+  Data loaded into buffer
 end note
 
 @enduml
