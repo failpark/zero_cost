@@ -11,10 +11,13 @@ fmt:
 check:
 	cd rust && just clippy
 
-compile:
+compile-paper:
 	cd paper && just compile
 	# cd c && just build
 	# cd rust && just asm-release
+
+compile-poster:
+	cd poster && just compile
 
 metrics-out:
 	python3 scripts/collect_metrics.py --skip-build -o scripts/metrics.csv
