@@ -6,6 +6,7 @@
 \usepackage{xcolor}
 \usepackage{float}
 \usepackage{minted}
+\usepackage{svg}
 \usepackage[style=ieee]{biblatex}
 \addbibresource{literature.bib}
 
@@ -38,7 +39,7 @@
 \maketitle
 
 \begin{abstract}
-Memory safety vulnerabilities—use-after-free, buffer overflows, out-of-bounds write—are at the top of known exploited vulnerabilities\cite{cwe_2024}. System programming languages like C, which allow for low-level memory control, are needed to write performance critical code.
+Memory safety vulnerabilities—use-after-free, buffer overflows, out-of-bounds write—are at the top of known exploited vulnerabilities\cite{cwe_2025}. System programming languages like C, which allow for low-level memory control, are needed to write performance critical code.
 State is the current condition of an object that determines what operations are valid. C cannot enforce valid state transitions, such as reading an open file, at compile-time. Operations need to be checked explicitly at runtime if they are in a valid state before running.
 Higher-level languages like Java automate detecting potentially unsafe operations, preventing errors but degrading performance. Therefore, developers have to make a tradeoff between safety and speed.
 
@@ -68,13 +69,10 @@ memory safety, typestate, Rust, C, zero-cost abstractions, compile-time verifica
 \section{Introduction}
 
 Memory safety vulnerabilities remain the dominant class of security flaws in systems software.
-According to the 2024 CWE Top 10 Known Exploited Vulnerabilities list, memory corruption issues such as out-of-bounds writes, use-after-free, and buffer overflows occupy the highest ranks\cite{cwe_2024}.
+According to the 2025 CWE Top 25 Most Dangerous Software Weaknesses, memory corruption vulnerabilities rank highly: Out-of-bounds Write (CWE-787, \#5), Use After Free (CWE-416, \#7), and Out-of-bounds Read (CWE-125, \#8)\cite{cwe_2025}.
+Additional memory safety issues include Classic Buffer Overflow (\#11), NULL Pointer Dereference (\#13), and Heap-based Buffer Overflow (\#16).
 Microsoft reports that approximately 70\% of their security vulnerabilities are memory safety issues\cite{microsoft_safety}.
 The U.S. Cybersecurity and Infrastructure Security Agency (CISA) has issued guidance urging software manufacturers to adopt memory-safe languages\cite{cisa_memory}.
-
-The Heartbleed vulnerability (CVE-2014-0160) exemplifies the consequences of memory unsafety.
-A missing bounds check in OpenSSL's heartbeat extension allowed attackers to read up to 64KB of server memory per request, potentially exposing private keys and user credentials\cite{wheeler_heartbleed}.
-The fix was straightforward—adding a bounds check—but the damage from this single missing validation affected millions of systems\cite{heartbleed_conv}.
 
 Systems programming languages like C provide the low-level control necessary for performance-critical code: operating systems, embedded systems, and cryptographic libraries.
 However, C places the entire burden of correctness on the programmer. State management—ensuring operations occur only when preconditions are met—must be enforced through explicit runtime checks or external documentation.
@@ -95,8 +93,15 @@ Google's research defines memory safety bugs as arising ``when a program allows 
 When such statements are reachable under adversarial control, they often represent exploitable vulnerabilities.
 
 State management is closely related.
-A file handle, for instance, must transition through defined states: closed → open → readable → closed.
+A file handle, for instance, must transition through defined states (Figure~\ref{fig:state-machine}): closed → open → readable → closed.
 Reading from a closed handle or closing an already-closed handle represents invalid state transitions that may cause undefined behavior or resource leaks.
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=1.00\columnwidth,inkscapelatex=false]{svg/state_machine_manual_bottom}
+	\caption{File handle state machine. Transitions: \texttt{create()} produces Closed; \texttt{open()} transitions to Open; \texttt{read()} loads data into Readable; \texttt{close()} returns to Closed.}
+	\label{fig:state-machine}
+\end{figure}
 
 In C, state is typically tracked with an enum field, and each operation checks this field before proceeding.
 This approach is safe but introduces conditional branches that consume CPU cycles and may cause branch mispredictions.
@@ -125,10 +130,20 @@ If this principle holds for typestate, Rust's approach would achieve what defens
 
 \section{Related Work}
 
-Strom and Yemini introduced typestate in 1986 as a compile-time analysis technique to detect invalid execution sequences\cite{strom_typestate_1986}.
-Session types in process calculi\cite{honda_types_1993} provide a complementary approach to enforcing protocol correctness through types.
-Rust's ownership system applies linear types—related to typestate—for memory safety.
-However, prior empirical work comparing typestate performance to C remains limited. This paper addresses that gap through assembly-level analysis.
+Strom and Yemini introduced typestate in 1986 as a compile-time technique to detect invalid execution sequences\cite{strom_typestate_1986}.
+Their formulation tracked variables through states like ``uninitialized'' or ``deallocated,'' with the compiler verifying state flow through program paths.
+Earlier work by Strom\cite{strom_mechanisms_1983} established the foundations for compile-time security enforcement through type-based mechanisms.
+
+Session types\cite{honda_types_1993} provide a complementary approach for communication protocols.
+Where typestate tracks individual object states, session types specify valid message sequences between parties.
+Both approaches encode valid sequences in the type system.
+
+Rust applies affine types---values used at most once---for memory safety without garbage collection.
+The borrow checker prevents use-after-free by tracking ownership at compile time.
+While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters and \texttt{PhantomData}.
+
+Prior empirical work comparing typestate performance to C remains limited.
+This paper addresses that gap through assembly-level analysis.
 
 \section{Implementation}
 
@@ -208,7 +223,7 @@ impl FileHandle<Readable> {
 \end{listing}
 
 The \texttt{PhantomData<State>} field is a zero-sized type marker that exists only for the type checker.
-The \texttt{read} method is only defined for \texttt{FileHandle<Open>}; calling it on other states produces a compile error.
+The \texttt{get\_data} method is only defined for \texttt{FileHandle<Readable>}; calling it on other states produces a compile error.
 Crucially, consuming \texttt{self} by value prevents reuse of the old handle after transition.
 
 \section{Analysis}
@@ -233,7 +248,7 @@ mov  w0, #-1         ; Return error
 ret
 \end{minted}
 
-This yields 7 instructions: 2 memory operations, 2 branches (compare + conditional jump), 1 arithmetic operation, and 2 returns.
+This yields 7 instructions: 2 memory loads, 1 comparison, 1 conditional branch, 1 move, and 2 returns.
 The 7 instruction count includes the error handling path; the happy path (valid state) requires 5 instructions, but both paths must be present in the compiled binary.
 
 The minimal C and Rust implementations both produced identical assembly:
@@ -274,6 +289,20 @@ While this correlation does not prove causation, it suggests that language choic
 
 The typestate pattern extends this principle beyond memory safety to protocol correctness.
 APIs that enforce valid state sequences through types prevent an entire class of logic errors—not through runtime checks that might be forgotten, but through compile-time guarantees that cannot be circumvented.
+
+\subsubsection{Beyond Memory Safety: Protocol Correctness}
+
+The typestate pattern extends beyond memory safety to other vulnerability classes in the 2025 CWE Top 25:
+
+\begin{itemize}
+	\item \textbf{Missing Authorization (CWE-862, \#4)}: Authorization can be encoded as type transitions. A \texttt{Request<Unauthenticated>} must pass through \texttt{authenticate()} to become \texttt{Request<Authenticated>} before accessing protected resources.
+
+	\item \textbf{Path Traversal (CWE-22, \#6)}: User-supplied paths typed as \texttt{UserPath<Unvalidated>} require validation to produce \texttt{SafePath<Validated>} before file operations accept them.
+
+	\item \textbf{OS Command Injection (CWE-78, \#9)}: Command execution can require \texttt{Argument<Sanitized>} type witnesses, preventing injection from unsanitized input.
+\end{itemize}
+
+Typestate prevents \textit{protocol violations}---forgetting to perform validation---rather than \textit{logic errors} in validation itself. The pattern ensures developers cannot skip security checks; it does not verify check correctness.
 
 \subsection{Additional Analytical Considerations}
 
