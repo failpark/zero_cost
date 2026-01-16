@@ -42,7 +42,7 @@
 Memory safety vulnerabilities constitute the majority of security flaws in systems software, with industry reports indicating rates of approximately 70\%.
 C requires explicit runtime checks for state validation, introducing conditional branches and overhead.
 Rust claims zero-cost abstractions: compile-time verification without runtime penalty.
-This paper investigates whether Rust's typestate pattern produces assembly equivalent to C code that omits safety checks.
+This paper investigates whether Rust's typestate pattern produces assembly identical to unsafe C code.
 
 Three file handle state machine implementations were compared:
 defensive C with runtime validation, minimal C without checks, and Rust with compile-time typestate enforcement.
@@ -54,7 +54,7 @@ These findings validate that compile-time type checking eliminates runtime overh
 \end{abstract}
 
 \begin{IEEEkeywords}
-memory safety, typestate, Rust, C, zero-cost abstractions, compile-time verification
+memory safety, typestate, Rust, C, zero-cost abstractions, compile-time verification, ARM64
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -62,7 +62,6 @@ memory safety, typestate, Rust, C, zero-cost abstractions, compile-time verifica
 Memory safety vulnerabilities remain the dominant class of security flaws in systems software.
 According to the 2025 CWE Top 25 Most Dangerous Software Weaknesses, memory corruption vulnerabilities rank highly:
 Out-of-bounds Write (CWE-787, \#5), Use After Free (CWE-416, \#7), and Out-of-bounds Read (CWE-125, \#8)\cite{cwe_2025}.
-Additional memory safety issues include Classic Buffer Overflow (\#11), NULL Pointer Dereference (\#13), and Heap-based Buffer Overflow (\#16).
 Microsoft reports that approximately 70\% of their security vulnerabilities are memory safety issues\cite{microsoft_safety}.
 The U.S. Cybersecurity and Infrastructure Security Agency (CISA)
 has issued guidance urging software manufacturers to adopt memory-safe languages\cite{cisa_memory}.
@@ -76,13 +75,13 @@ This creates a fundamental tension.
 Defensive programming adds conditional branches that verify state before each operation, incurring runtime overhead.
 Omitting these checks improves performance but permits undefined behavior when invariants are violated.
 Higher-level languages such as Java enforce safety through garbage collection and runtime checks,
-but these mechanisms introduce overhead generally considered incompatible with bare-metal systems programming\cite{oncd_report}.
+but these mechanisms introduce runtime overhead that limits their applicability to resource-constrained and bare-metal systems programming\cite{oncd_report}.
 
-Rust proposes a different approach: encoding invariants in the type system so that invalid programs fail to compile.
+Rust takes a different approach: encoding invariants in the type system so that invalid programs fail to compile.
 The language's ownership system prevents use-after-free and data races at compile time\cite{rust_embedded}.
 This paper hypothesizes that Rust's typestate pattern produces assembly identical to unchecked C while providing compile-time safety guarantees.
 The central research question is: Can compile-time state verification eliminate runtime
-overhead while maintaining equivalent safety to defensive runtime checks?
+overhead while preventing invalid state transitions at compile time?
 
 \section{Background}
 
@@ -145,8 +144,8 @@ The borrow checker prevents use-after-free by tracking ownership at compile time
 While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters and \texttt{PhantomData}.
 
 Prior empirical work comparing typestate performance to C at the assembly level remains limited.
-Existing literature focuses primarily on the theoretical foundations of typestate\cite{strom_typestate_1986, strom_mechanisms_1983}
-and session types\cite{honda_types_1993}, with minimal attention to empirical performance validation.
+Existing literature focuses primarily on the theoretical foundations of typestate\cite{strom_typestate_1986, strom_mechanisms_1983},
+with minimal attention to empirical performance validation.
 This paper addresses that gap through assembly-level analysis of concrete implementations.
 
 \section{Methodology}
@@ -162,8 +161,11 @@ Rust was compiled as a \texttt{cdylib} (C-compatible dynamic library) to prevent
 Functions were marked with \texttt{\#[no\_mangle]} to preserve function boundaries for comparison.
 The C implementations were compiled as shared libraries with equivalent settings (\texttt{-shared -fPIC}).
 
+This study is limited to ARM64 architecture; results on other platforms such as x86-64 may differ.
+
 Instructions and conditional branches were counted manually for each function, with assembly listings verified against compiler output.
 Four state transition functions were analyzed: \texttt{open}, \texttt{read}, \texttt{get\_data}, and \texttt{close}.
+These four functions represent all state transitions in the file handle state machine, providing complete coverage of the pattern's behavior.
 
 \subsection{Defensive C Implementation}
 
@@ -287,7 +289,7 @@ This yields 2 instructions: 1 memory operation and 1 return, with zero condition
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\columnwidth]{figures/instruction_count.pdf}
-	\caption{Total instruction count comparison at -O2. Rust matches minimal C with 2 instructions, while defensive C requires 7 instructions due to state validation overhead. All values are integers; axis includes padding for visual clarity.}
+	\caption{Total instruction count comparison at -O2. Rust matches minimal C with 2 instructions, while defensive C requires 7 instructions due to state validation overhead.}
 	\label{fig:instruction-count}
 \end{figure}
 
@@ -304,8 +306,8 @@ The defensive C implementation requires 3.5$\times$ the instructions due to expl
 
 Figure~\ref{fig:instruction-breakdown} reveals the key insight:
 Rust's typestate implementation contains zero conditional branch instructions, identical to minimal C.
-The defensive C version includes 2 branch instructions---a compare (\texttt{cmp}) and conditional jump (\texttt{b.ne})---that verify state validity at runtime.
-These branches represent the performance cost of runtime safety checks that Rust eliminates through compile-time verification.
+The defensive C version includes a compare instruction (\texttt{cmp}) and one conditional branch (\texttt{b.ne}) that verify state validity at runtime.
+These instructions represent the performance cost of runtime safety checks that Rust eliminates through compile-time verification.
 
 \subsection{Multi-Function Analysis}
 
@@ -380,8 +382,8 @@ while providing compile-time guarantees equivalent to defensive C's runtime chec
 Across four functions, defensive C consistently requires 3.5--5.5$\times$ more instructions due to state validation overhead.
 
 This analysis has limitations.
-Only ARM64 architecture was tested; results may differ on x86-64 or other platforms,
-though similar behavior is expected given LLVM's cross-platform optimization strategies.
+Only ARM64 architecture was tested; results may differ on x86-64 or other platforms and warrant further investigation.
+Additionally, only -O2 optimization was tested; behavior at -O3 or with link-time optimization (LTO) remains unexplored.
 The benchmark uses a synthetic state machine rather than real-world code with I/O operations.
 The typestate pattern applies specifically to state machines; other safety patterns may have different overhead characteristics.
 Only a single state machine design was evaluated; more complex patterns warrant further investigation.
