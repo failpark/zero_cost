@@ -11,6 +11,9 @@ fmt:
 check:
 	cd rust && just clippy
 
+compile:
+	@just compile-paper
+
 compile-paper:
 	cd paper && just compile
 	# cd c && just build
