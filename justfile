@@ -11,15 +11,12 @@ fmt:
 check:
 	cd rust && just clippy
 
-compile:
-	@just compile-paper
+compile: paper poster
 
-compile-paper:
+paper:
 	cd paper && just compile
-	# cd c && just build
-	# cd rust && just asm-release
 
-compile-poster:
+poster:
 	cd poster && just compile
 
 metrics-out:
