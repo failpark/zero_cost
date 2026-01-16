@@ -11,6 +11,9 @@ clean:
 	mkdir out
 	touch out/.gitkeep
 
+open:
+	open main.pdf
+
 compile:
 	source .venv/bin/activate && \
 	latexmk -pdf -output-directory=out -shell-escape -interaction=nonstopmode main.tex
