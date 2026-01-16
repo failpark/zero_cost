@@ -39,26 +39,16 @@
 \maketitle
 
 \begin{abstract}
-Memory safety vulnerabilities—use-after-free, buffer overflows, out-of-bounds writes—dominate security flaw statistics in systems software. System programming languages like C, which allow for low-level memory control, are needed to write performance critical code.
-State is the current condition of an object that determines what operations are valid. C cannot enforce valid state transitions, such as reading an open file, at compile-time. Operations need to be checked explicitly at runtime if they are in a valid state before running.
-Higher-level languages like Java automate detecting potentially unsafe operations, preventing errors but degrading performance. Therefore, developers have to make a tradeoff between safety and speed.
+Memory safety vulnerabilities dominate security flaws in systems software.
+C requires explicit runtime checks for state validation, introducing conditional branches and overhead.
+Rust claims zero-cost abstractions: compile-time verification without runtime penalty.
+This work investigates whether Rust's typestate pattern produces assembly equivalent to C code that omits safety checks.
 
-Rust has the ability to move certain behaviors to compile-time execution or analysis.
-This approach claims to be able to verify state validity during compilation, which could lead to preventing errors that runtime checks would detect while achieving comparable C performance.
-This work investigates whether Rust's compile-time guarantees produce assembly with equivalent performance to C code that omits all safety checks.
+Three file handle state machine implementations were compared: defensive C with runtime validation, minimal C without checks, and Rust with compile-time typestate enforcement.
+Assembly analysis at -O2 on ARM64 measured instruction counts and conditional branches.
 
-This work implements three versions of a file handle state machine, isolating state management from I/O overhead:
-\begin{enumerate}
-	\item Defensive C: Uses an enum to track state, with explicit validation checks before each operation. Safe, but includes runtime conditional branches.
-	\item Minimal C: Tracks state with an enum, but omits all validation. Fast but permits invalid operations to compile.
-	\item Rust: Encodes each state as a distinct type, making invalid transitions not compile.
-\end{enumerate}
-
-The resulting assembly will be compared using total instruction count, conditional branches, and state-tracking overhead.
-
-Results demonstrate that Rust's typestate implementation produces assembly identical to minimal C (2 instructions, 0 branches) while defensive C requires 7 instructions with 2 conditional branches for state validation.
-Across all state transition functions (\texttt{open}, \texttt{read}, \texttt{get\_data}, \texttt{close}), defensive C consistently requires 3.5--5.5× more instructions.
-This validates Rust's zero-cost abstraction principle: compile-time type checking eliminates runtime overhead while preventing invalid state transitions.
+Results show Rust produces assembly identical to minimal C (2 instructions, 0 branches) while defensive C requires 7 instructions with 2 branches.
+This validates that compile-time type checking eliminates runtime overhead while preventing invalid state transitions.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -86,12 +76,9 @@ This paper investigates whether the same principle—compile-time verification�
 
 \section{Background}
 
-\subsection{Memory Safety and State Management}
+\subsection{State Management}
 
-Google's research defines memory safety bugs as arising ``when a program allows statements to execute that read or write memory, when the program is in a state where the memory access constitutes undefined behavior''\cite{google_paper}.
-When such statements are reachable under adversarial control, they often represent exploitable vulnerabilities.
-
-State management is closely related.
+State management ensures that operations occur only when preconditions are met\cite{google_paper}.
 A file handle, for instance, must transition through defined states (Figure~\ref{fig:state-machine}): closed → open → readable → closed.
 Reading from a closed handle or closing an already-closed handle represents invalid state transitions that cause undefined behavior.
 Conversely, failing to close a handle causes resource leaks.
@@ -133,10 +120,6 @@ If this principle holds for typestate, Rust's approach would achieve what defens
 Strom and Yemini introduced typestate in 1986 as a compile-time technique to detect invalid execution sequences\cite{strom_typestate_1986}.
 Their formulation tracked variables through states like ``uninitialized'' or ``deallocated,'' with the compiler verifying state flow through program paths.
 Earlier work by Strom\cite{strom_mechanisms_1983} established the foundations for compile-time security enforcement through type-based mechanisms.
-
-Session types\cite{honda_types_1993} provide a complementary approach for communication protocols.
-Where typestate tracks individual object states, session types specify valid message sequences between parties.
-Both approaches encode valid sequences in the type system.
 
 Rust applies affine types---values used at most once---for memory safety without garbage collection.
 The borrow checker prevents use-after-free by tracking ownership at compile time.
@@ -290,20 +273,7 @@ While this correlation does not prove causation, it suggests that language choic
 
 The typestate pattern extends this principle beyond memory safety to protocol correctness.
 APIs that enforce valid state sequences through types prevent an entire class of logic errors—not through runtime checks that might be forgotten, but through compile-time guarantees that cannot be circumvented.
-
-\subsubsection{Beyond Memory Safety: Protocol Correctness}
-
-The typestate pattern extends beyond memory safety to other vulnerability classes in the 2025 CWE Top 25:
-
-\begin{itemize}
-	\item \textbf{Missing Authorization (CWE-862, \#4)}: Authorization can be encoded as type transitions. A \texttt{Request<Unauthenticated>} must pass through \texttt{authenticate()} to become \texttt{Request<Authenticated>} before accessing protected resources.
-
-	\item \textbf{Path Traversal (CWE-22, \#6)}: User-supplied paths typed as \texttt{UserPath<Unvalidated>} require validation to produce \texttt{SafePath<Validated>} before file operations accept them.
-
-	\item \textbf{OS Command Injection (CWE-78, \#9)}: Command execution can require \texttt{Argument<Sanitized>} type witnesses, preventing injection from unsanitized input.
-\end{itemize}
-
-Typestate prevents \textit{protocol violations}---forgetting to perform validation---rather than \textit{logic errors} in validation itself. The pattern ensures developers cannot skip security checks; it does not verify check correctness.
+The pattern can potentially apply to other vulnerability classes such as authorization checks, input validation, and command sanitization by encoding security state transitions in the type system.
 
 \subsection{Additional Analytical Considerations}
 
@@ -326,13 +296,6 @@ Apple Clang (also LLVM-based) performed the same optimization for the minimal C 
 This code deduplication demonstrates LLVM's optimization capabilities.
 
 This consistency demonstrates that zero-cost abstractions hold across all state transitions, not just a single cherry-picked function.
-
-\subsubsection{Branch Prediction Impact}
-
-Modern ARM64 processors achieve high performance through speculative execution and branch prediction.
-The conditional branches in defensive C (\texttt{cmp} + \texttt{b.ne}) can in principle cause pipeline stalls when mispredicted.
-Rust's compile-time validation eliminates these branches entirely, enabling straight-line execution.
-Measuring actual execution time differences would require microbenchmarks beyond this static analysis.
 
 \section{Conclusion}
 
