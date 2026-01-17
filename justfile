@@ -22,5 +22,13 @@ poster:
 metrics-out:
 	python3 scripts/collect_metrics.py --skip-build -o scripts/metrics.csv
 
-metrics:
-	python3 scripts/collect_metrics.py
+metrics: _compile_all _dump_all
+	uv run paper/scripts/collect_metrics.py
+
+_compile_all:
+	cd c && just c
+	cd rust && just c
+
+_dump_all:
+	cd c && just d
+	cd rust && just d

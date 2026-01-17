@@ -6,7 +6,7 @@ import re
 import csv
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 # Architecture-specific instruction patterns
 ARM64_PATTERNS = {
@@ -87,57 +87,6 @@ def count_instructions(asm_lines: List[str], patterns: Dict[str, str]) -> Dict[s
 
 	return counts
 
-def build_all():
-	"""Build all implementations and extract assembly."""
-	print("Building all implementations...", file=sys.stderr)
-
-	root = Path('/Users/phedias/code/sem3/zero_cost')
-	c_dir = root / 'c'
-	rust_dir = root / 'rust'
-	out_dir = c_dir / 'out'
-
-	# Ensure output directory exists
-	out_dir.mkdir(exist_ok=True)
-
-	# Build defensive C
-	print("  Building defensive C...", file=sys.stderr)
-	subprocess.run(
-		['gcc', '-O2', '-c', 'filehandle.c', '-o', 'out/filehandle.o'],
-		cwd=c_dir, check=True
-	)
-	subprocess.run(
-		['objdump', '-d', 'out/filehandle.o'],
-		cwd=c_dir, capture_output=True, text=True, check=True
-	).stdout
-	subprocess.run(
-		['sh', '-c', 'objdump -d out/filehandle.o > out/filehandle_asm.txt'],
-		cwd=c_dir, check=True
-	)
-
-	# Build minimal C
-	print("  Building minimal C...", file=sys.stderr)
-	subprocess.run(
-		['gcc', '-O2', '-c', 'filehandle_unsafe.c', '-o', 'out/filehandle_unsafe.o'],
-		cwd=c_dir, check=True
-	)
-	subprocess.run(
-		['sh', '-c', 'objdump -d out/filehandle_unsafe.o > out/filehandle_unsafe_asm.txt'],
-		cwd=c_dir, check=True
-	)
-
-	# Build Rust (as cdylib to prevent whole-program optimization)
-	print("  Building Rust library...", file=sys.stderr)
-	subprocess.run(
-		['cargo', 'build', '--release', '--lib'],
-		cwd=rust_dir, check=True, capture_output=True
-	)
-	subprocess.run(
-		['sh', '-c', 'objdump -d target/release/libfilehandle.dylib > ../c/out/rust_asm.txt'],
-		cwd=rust_dir, check=True
-	)
-
-	print("Build complete!", file=sys.stderr)
-
 def analyze_all_functions():
 	"""Analyze all implementations and output CSV."""
 	patterns = detect_architecture()
@@ -198,51 +147,21 @@ def analyze_all_functions():
 	return results
 
 def main():
-	"""Main entry point."""
-	import argparse
-
-	parser = argparse.ArgumentParser(
-		description='Collect assembly metrics for zero-cost abstraction comparison'
-	)
-	parser.add_argument(
-		'--skip-build',
-		action='store_true',
-		help='Skip building and use existing assembly files'
-	)
-	parser.add_argument(
-		'-o', '--output',
-		type=str,
-		default=None,
-		help='Output CSV file (default: stdout)'
-	)
-
-	args = parser.parse_args()
-
-	# Build if needed
-	if not args.skip_build:
-		build_all()
-
-	# Analyze
 	print("\nAnalyzing assembly...", file=sys.stderr)
 	results = analyze_all_functions()
 
 	# Output CSV
 	if results:
-		fieldnames = ['implementation', 'function', 'total', 'branch', 'compare',
-		              'memory', 'arithmetic', 'control']
+		fieldnames = ['implementation', 'function', 'total', 'branch', 'compare', 'memory', 'arithmetic', 'control']
 
-		output_file = sys.stdout
-		if args.output:
-			output_file = open(args.output, 'w')
+		output_file = open('scripts/metrics.csv', 'w')
 
 		writer = csv.DictWriter(output_file, fieldnames=fieldnames)
 		writer.writeheader()
 		for row in results:
 			writer.writerow(row)
 
-		if args.output:
-			output_file.close()
-			print(f"\nMetrics written to {args.output}", file=sys.stderr)
+		output_file.close()
 	else:
 		print("No results found!", file=sys.stderr)
 		return 1

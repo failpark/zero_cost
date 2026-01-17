@@ -1,3 +1,8 @@
+alias c := compile_all
+alias d := dump_all
+
+file := "filehandle"
+
 default:
 	just --list
 
@@ -12,3 +17,18 @@ disassemble: build
 
 clean:
 	rm -r out && mkdir out
+
+compile_all:
+	@just compile {{file}}
+	@just compile "{{file}}_unsafe"
+
+dump_all:
+	@just dump {{file}}
+	@just dump "{{file}}_unsafe"
+
+compile f=file:
+	gcc -O2 -c {{f}}.c -o out/{{f}}.o
+
+dump f=file:
+	objdump -d out/{{f}}.o > out/{{f}}.asm
+

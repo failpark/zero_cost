@@ -1,3 +1,6 @@
+alias c := build
+alias d := dump
+
 default:
 	just --list
 
@@ -19,3 +22,10 @@ fmt:
 
 clippy:
 	cargo clippy
+
+build:
+	cargo build --release --lib
+
+dump:
+	objdump -d ./target/release/libfilehandle.dylib > ./target/release/libfilehandle.asm
+
