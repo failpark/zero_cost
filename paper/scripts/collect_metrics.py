@@ -94,11 +94,12 @@ def analyze_all_functions():
 	print(f"Detected architecture: {arch_name}", file=sys.stderr)
 
 	c_dir = Path('/Users/phedias/code/sem3/zero_cost/c')
+	rust_dir = Path('/Users/phedias/code/sem3/zero_cost/rust')
 
 	# Read assembly files
-	defensive_asm = (c_dir / 'out/filehandle_asm.txt').read_text()
-	minimal_asm = (c_dir / 'out/filehandle_unsafe_asm.txt').read_text()
-	rust_asm = (c_dir / 'out/rust_asm.txt').read_text()
+	defensive_asm = (c_dir / 'out/filehandle.asm').read_text()
+	minimal_asm = (c_dir / 'out/filehandle_unsafe.asm').read_text()
+	rust_asm = (rust_dir / 'target/release/libfilehandle.asm').read_text()
 
 	# Functions to analyze
 	functions = [
