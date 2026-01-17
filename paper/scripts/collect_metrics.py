@@ -154,7 +154,7 @@ def main():
 	if results:
 		fieldnames = ['implementation', 'function', 'total', 'branch', 'compare', 'memory', 'arithmetic', 'control']
 
-		output_file = open('scripts/metrics.csv', 'w')
+		output_file = open('paper/scripts/metrics.csv', 'w')
 
 		writer = csv.DictWriter(output_file, fieldnames=fieldnames)
 		writer.writeheader()
