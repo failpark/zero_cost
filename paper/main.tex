@@ -5,7 +5,7 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{float}
-\usepackage{minted}
+\usepackage[newfloat]{minted}
 \usepackage{svg}
 \usepackage[style=ieee]{biblatex}
 \addbibresource{literature.bib}
@@ -19,6 +19,8 @@
 	numbersep=5pt,
 	tabsize=2
 }
+\SetupFloatingEnvironment{listing}{placement=htp}
+\AtBeginEnvironment{minted}{\setlength{\parskip}{0pt}}
 
 \begin{document}
 
