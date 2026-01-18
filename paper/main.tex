@@ -8,6 +8,7 @@
 \usepackage[newfloat]{minted}
 \usepackage{svg}
 \usepackage[style=ieee]{biblatex}
+\usepackage{hyperref}
 \addbibresource{literature.bib}
 
 % Minted style configuration
@@ -40,7 +41,7 @@
 \maketitle
 
 \begin{abstract}
-Memory safety vulnerabilities constitute the majority of security flaws in systems software, with industry reports indicating rates of approximately 70\%.
+Memory safety vulnerabilities constitute the majority of security flaws in systems software, with Microsoft reporting rates of approximately 70\%.
 C requires explicit runtime checks for state validation, introducing conditional branches and overhead.
 Rust claims zero-cost abstractions: compile-time verification without runtime penalty.
 This paper investigates whether Rust's typestate pattern produces assembly identical to unsafe C code.
@@ -81,8 +82,9 @@ Rust's design philosophy emphasizes \emph{zero-cost abstractions}---high-level c
 Generic type parameters are instantiated through monomorphization, generating specialized machine code for each concrete type at compile time rather than using runtime dispatch.
 This paper hypothesizes that Rust's typestate pattern produces assembly identical to unchecked C while providing compile-time safety guarantees.
 The central research question is: Can compile-time state verification eliminate runtime overhead while preventing invalid state transitions?
+The complete source code for all implementations, build scripts, and generated assembly are available at \url{https://github.com/failpark/zero_cost/}.
 
-\section{Related Work}
+\section{Background}
 
 Strom and Yemini introduced typestate in 1986 as a compile-time technique to detect invalid execution sequences\cite{strom_typestate_1986}.
 Their formulation tracked variables through states like ``uninitialized'' or ``deallocated,'' with the compiler verifying state flow through program paths.
@@ -93,7 +95,8 @@ Attempting to call \texttt{read} on a \texttt{FileHandle<Closed>} produces a com
 
 Rust applies affine types, meaning values can be used at most once, enabling memory safety without garbage collection.
 The borrow checker prevents use-after-free by tracking ownership at compile time.
-While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters and zero-sized \texttt{PhantomData} markers that occupy no memory\cite{rust_reference_phantomdata}.
+While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters
+and zero-sized \texttt{PhantomData} markers that occupy no memory\cite{rust_reference_phantomdata}.
 
 Prior empirical work comparing typestate performance to C at the assembly level remains limited.
 This paper addresses that gap through assembly-level analysis of concrete implementations.
@@ -106,12 +109,12 @@ The handle stores only an integer \texttt{data} field, and operations simulate s
 \begin{figure}[H]
 	\centering
 	\includesvg[width=1.00\columnwidth,inkscapelatex=false]{svg/state_machine_manual_bottom}
-	\caption{File handle state machine. Transitions: \texttt{create()} produces Closed; \texttt{open()} transitions to Open; \texttt{read()} loads data into Readable; \texttt{close()} returns to Closed.}
+	\caption{File handle state machine with four states and their transitions.}
 	\label{fig:state-machine}
 \end{figure}
 
 Each implementation was compiled at -O2 optimization level: Apple Clang 17.0.0 for C, and rustc 1.91.1 with Rust edition 2024 for Rust.
-Assembly was extracted using \texttt{objdump -d} on macOS ARM64 (\texttt{aarch64-apple-darwin}).
+Assembly was extracted using \texttt{objdump -d} on an Apple M3 chip (\texttt{aarch64-apple-darwin}).
 
 Rust was compiled as a \texttt{cdylib} (C-compatible dynamic library) to prevent whole-program optimization from constant-folding the entire state machine.
 Functions were marked with \texttt{\#[no\_mangle]} to preserve function boundaries for comparison.
@@ -199,7 +202,10 @@ mov  w0, #-1         ; Return error
 ret
 \end{minted}
 
-This yields 7 instructions including the error path. The label \texttt{error:} marks a branch target and is not counted.
+This yields 7 instructions: 2 memory loads, 1 comparison, 1 conditional branch, 1 move, and 2 returns.
+The label \texttt{error:} marks a branch target and is not counted as an instruction.
+The 7-instruction count includes the error handling path; the happy path (valid state) requires 5 instructions,
+but both paths must be present in the compiled binary.
 
 The minimal C and Rust implementations both produced identical assembly:
 
@@ -254,7 +260,8 @@ Table~\ref{tab:multi-function} presents the complete results.
 \end{tabular}
 \end{table}
 
-Across all functions, Rust and minimal C produce identical assembly, while defensive C requires 3.5--5.5$\times$ the instructions.
+Across all functions, Rust and minimal C produce byte-identical assembly, while defensive C requires 3.5--5.5$\times$ the instructions.
+Complete assembly listings for all functions are available in the project repository for independent verification.
 
 \section{Discussion}
 
@@ -264,7 +271,8 @@ Rust's type-level state encoding produces assembly identical to minimal C while 
 \subsection{Implications for Security}
 
 Google's Android team reported that as memory-unsafe code decreased, memory safety vulnerabilities dropped from 76\% in 2019 to 35\% in 2022\cite{google_android}.
-The typestate pattern extends this principle beyond memory safety to protocol correctness---APIs that enforce valid state sequences through types prevent logic errors through compile-time guarantees, not runtime checks that might be forgotten.
+The typestate pattern extends this principle beyond memory safety to protocol correctness
+---APIs that enforce valid state sequences through types prevent logic errors through compile-time guarantees, not runtime checks that might be forgotten.
 
 \subsection{Generalizability}
 
