@@ -94,7 +94,7 @@ Operations consume the input type and produce the output type---the \texttt{open
 Attempting to call \texttt{read} on a \texttt{FileHandle<Closed>} produces a compile-time error; the method does not exist for that type.
 
 Rust applies affine types, meaning values can be used at most once, enabling memory safety without garbage collection.
-The borrow checker prevents use-after-free by tracking ownership at compile time.
+The borrow checker prevents use-after-free by tracking ownership at compile time\cite{astrauskas_leveraging_2019}.
 While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters
 and zero-sized \texttt{PhantomData} markers that occupy no memory\cite{rust_reference_phantomdata}.
 
