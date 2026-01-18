@@ -19,8 +19,7 @@
 	numbersep=5pt,
 	tabsize=2
 }
-\SetupFloatingEnvironment{listing}{placement=htp}
-\AtBeginEnvironment{minted}{\setlength{\parskip}{0pt}}
+% \SetupFloatingEnvironment{listing}{placement=htp}
 
 \begin{document}
 
@@ -68,33 +67,41 @@ Microsoft reports that approximately 70\% of their security vulnerabilities are 
 The U.S. Cybersecurity and Infrastructure Security Agency (CISA)
 has issued guidance urging software manufacturers to adopt memory-safe languages\cite{cisa_memory}.
 
-Systems programming languages such as C provide the low-level control necessary for performance-critical code,
-including operating systems, embedded systems, and cryptographic libraries.
+Systems programming languages such as C provide the low-level control necessary for performance-critical code.
 However, C places the entire burden of correctness on the programmer.
-State management---ensuring operations occur only when preconditions are met---must be enforced through explicit runtime checks or external documentation.
+State management---ensuring operations occur only when preconditions are met\cite{google_paper}---must be enforced through explicit runtime checks.
+In C, state is typically tracked with an enum field, and each operation checks this field before proceeding, introducing conditional branches with associated overhead.
 
-This creates a fundamental tension.
-Defensive programming adds conditional branches that verify state before each operation, incurring runtime overhead.
-Omitting these checks improves performance but permits undefined behavior when invariants are violated.
-Higher-level languages such as Java enforce safety through garbage collection and runtime checks,
-but these mechanisms introduce runtime overhead that limits their applicability to resource-constrained and bare-metal systems programming\cite{oncd_report}.
+This creates a fundamental tension: defensive programming incurs runtime overhead, while omitting checks permits undefined behavior.
+Higher-level languages enforce safety through garbage collection and runtime checks,
+but these mechanisms limit their applicability to resource-constrained systems\cite{oncd_report}.
 
 Rust takes a different approach: encoding invariants in the type system so that invalid programs fail to compile.
-The language's ownership system prevents use-after-free and data races at compile time\cite{rust_embedded}.
+Rust's design philosophy emphasizes \emph{zero-cost abstractions}---high-level constructs that compile to code as efficient as hand-written low-level equivalents\cite{rust_embedded}.
+Generic type parameters are instantiated through monomorphization, generating specialized machine code for each concrete type at compile time rather than using runtime dispatch.
 This paper hypothesizes that Rust's typestate pattern produces assembly identical to unchecked C while providing compile-time safety guarantees.
-The central research question is: Can compile-time state verification eliminate runtime
-overhead while preventing invalid state transitions at compile time?
+The central research question is: Can compile-time state verification eliminate runtime overhead while preventing invalid state transitions?
 
-\section{Background}
+\section{Related Work}
 
-\subsection{State Management}
+Strom and Yemini introduced typestate in 1986 as a compile-time technique to detect invalid execution sequences\cite{strom_typestate_1986}.
+Their formulation tracked variables through states like ``uninitialized'' or ``deallocated,'' with the compiler verifying state flow through program paths.
+The typestate pattern encodes an object's state in its type: rather than a single \texttt{FileHandle} type with a state field,
+each state becomes a distinct type (\texttt{FileHandle<Closed>}, \texttt{FileHandle<Open>}, etc.).
+Operations consume the input type and produce the output type---the \texttt{open} method takes \texttt{FileHandle<Closed>} by value and returns \texttt{FileHandle<Open>}, invalidating the original handle.
+Attempting to call \texttt{read} on a \texttt{FileHandle<Closed>} produces a compile-time error; the method does not exist for that type.
 
-State management ensures that operations occur only when preconditions are met\cite{google_paper}.
-A file handle, for instance, must transition through defined states
-(Figure~\ref{fig:state-machine}): \texttt{create()} produces a Closed handle;
-\texttt{open()} transitions to Open; \texttt{read()} loads data into Readable; \texttt{close()} returns to Closed.
-Reading from a closed handle or closing an already-closed handle represents invalid state transitions that may cause undefined behavior in C, depending on the implementation.
-Conversely, failing to close a handle causes resource leaks.
+Rust applies affine types, meaning values can be used at most once, enabling memory safety without garbage collection.
+The borrow checker prevents use-after-free by tracking ownership at compile time.
+While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters and zero-sized \texttt{PhantomData} markers that occupy no memory\cite{rust_reference_phantomdata}.
+
+Prior empirical work comparing typestate performance to C at the assembly level remains limited.
+This paper addresses that gap through assembly-level analysis of concrete implementations.
+
+\section{Methodology}
+
+To isolate state management overhead from I/O latency, three variants of a minimal file handle abstraction were implemented (Figure~\ref{fig:state-machine}).
+The handle stores only an integer \texttt{data} field, and operations simulate state transitions without actual file system calls.
 
 \begin{figure}[H]
 	\centering
@@ -102,59 +109,6 @@ Conversely, failing to close a handle causes resource leaks.
 	\caption{File handle state machine. Transitions: \texttt{create()} produces Closed; \texttt{open()} transitions to Open; \texttt{read()} loads data into Readable; \texttt{close()} returns to Closed.}
 	\label{fig:state-machine}
 \end{figure}
-
-In C, state is typically tracked with an enum field, and each operation checks this field before proceeding.
-This approach is safe but introduces conditional branches that consume CPU cycles and may cause branch mispredictions.
-Furthermore, standard C compilers cannot verify that programmers consistently perform these checks.
-
-\subsection{The Typestate Pattern}
-
-The typestate pattern, introduced by Strom and Yemini\cite{strom_typestate_1986},
-encodes an object's state in its type, making state transitions explicit in the type system.
-Rather than a single \texttt{FileHandle} type with a state field,
-each state becomes a distinct type: \texttt{FileHandle<Closed>}, \texttt{FileHandle<Open>}, \texttt{FileHandle<Readable>}.
-
-Operations consume the input type and produce the output type.
-The \texttt{open} method takes \texttt{FileHandle<Closed>} by value (consuming it) and returns \texttt{FileHandle<Open>}.
-This consumption is critical: once the handle transitions states, the original handle is invalidated,
-preventing operations on stale state---analogous to how Rust's ownership prevents use-after-free at the memory level.
-Attempting to call \texttt{read} on a \texttt{FileHandle<Closed>} produces a compile-time error; the method simply does not exist for that type.
-
-This approach offers two potential advantages.
-First, invalid state transitions become compile errors rather than runtime failures.
-Second, since the compiler statically verifies state validity,
-runtime checks become unnecessary---suggesting that typestate-encoded programs could match the performance of unchecked C.
-
-\subsection{Zero-Cost Abstractions}
-
-Rust's design philosophy emphasizes zero-cost abstractions:
-high-level constructs that compile to code as efficient as hand-written low-level equivalents\cite{rust_embedded}.
-Generic type parameters are instantiated through monomorphization---the process of generating specialized machine code
-for each concrete type used at compile time, rather than using runtime dispatch.
-Since \texttt{PhantomData<State>} is zero-sized, the state markers occupy no memory and produce no runtime code\cite{rust_reference_phantomdata}.
-
-If this principle holds for typestate, Rust's approach would achieve what defensive C cannot: safety without runtime overhead.
-
-\section{Related Work}
-
-Strom and Yemini introduced typestate in 1986 as a compile-time technique to detect invalid execution sequences\cite{strom_typestate_1986}.
-Their formulation tracked variables through states like ``uninitialized'' or ``deallocated,'' with the compiler verifying state flow through program paths.
-Earlier work by Strom\cite{strom_mechanisms_1983} established the foundations for compile-time security enforcement through type-based mechanisms.
-
-Rust applies affine types, meaning values can be used at most once, enabling memory safety without garbage collection.
-The borrow checker prevents use-after-free by tracking ownership at compile time.
-While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters and \texttt{PhantomData}.
-
-Prior empirical work comparing typestate performance to C at the assembly level remains limited.
-Existing literature focuses primarily on the theoretical foundations of typestate\cite{strom_typestate_1986, strom_mechanisms_1983},
-with minimal attention to empirical performance validation.
-This paper addresses that gap through assembly-level analysis of concrete implementations.
-
-\section{Methodology}
-
-To isolate state management overhead from I/O latency, three variants of a minimal file handle abstraction were implemented.
-The handle stores only an integer \texttt{data} field, and operations simulate state transitions without actual file system calls.
-This synthetic approach enables direct comparison of state-checking overhead without confounding factors.
 
 Each implementation was compiled at -O2 optimization level: Apple Clang 17.0.0 for C, and rustc 1.91.1 with Rust edition 2024 for Rust.
 Assembly was extracted using \texttt{objdump -d} on macOS ARM64 (\texttt{aarch64-apple-darwin}).
@@ -175,27 +129,15 @@ The defensive implementation tracks state explicitly with an enum and validates 
 
 \begin{listing}[H]
 \begin{minted}{c}
-typedef enum {
-	STATE_CLOSED, STATE_OPEN, STATE_READABLE
-} state_t;
-
-typedef struct {
-	state_t state;
-	int data;
-} file_handle_t;
-
 int file_handle_get_data(file_handle_t* h) {
-	if (h->state != STATE_READABLE) {
-		return -1;  // Can only get data when readable
-	}
+	if (h->state != STATE_READABLE) return -1;
 	return h->data;
 }
 \end{minted}
-\caption{Defensive C state management. The error return value of -1 represents one possible error-handling strategy; alternatives include setting \texttt{errno} or using out-parameters.}
+\caption{Defensive C state management with runtime validation.}
 \end{listing}
 
-Each operation contains a conditional branch checking the current state.
-The compiled assembly includes comparison instructions and conditional jumps for each check.
+Each operation contains a conditional branch, producing comparison and jump instructions.
 
 \subsection{Minimal C Implementation}
 
@@ -203,10 +145,6 @@ The minimal implementation omits all state tracking:
 
 \begin{listing}[H]
 \begin{minted}{c}
-typedef struct {
-	int data;
-} file_handle_t;
-
 int file_handle_get_data(file_handle_t* h) {
 	return h->data;
 }
@@ -214,8 +152,7 @@ int file_handle_get_data(file_handle_t* h) {
 \caption{Minimal C without state checks}
 \end{listing}
 
-This version permits any sequence of operations, including invalid ones.
-It represents the performance ceiling---the minimum possible overhead---but provides no safety guarantees.
+This version represents the performance ceiling but permits invalid operations.
 
 \subsection{Rust Typestate Implementation}
 
@@ -223,19 +160,11 @@ The Rust implementation encodes each state as a zero-sized type:
 
 \begin{listing}[H]
 \begin{minted}{rust}
-struct Closed;
-struct Open;
-struct Readable;
+struct Closed; struct Open; struct Readable;
 
 struct FileHandle<State> {
 	data: i32,
 	_state: PhantomData<State>,
-}
-
-impl FileHandle<Closed> {
-	fn open(self) -> FileHandle<Open> {
-		FileHandle { data: self.data, _state: PhantomData }
-	}
 }
 
 impl FileHandle<Open> {
@@ -245,18 +174,14 @@ impl FileHandle<Open> {
 }
 
 impl FileHandle<Readable> {
-	fn get_data(&self) -> i32 {
-		self.data
-	}
+	fn get_data(&self) -> i32 { self.data }
 }
 \end{minted}
-\caption{Rust typestate pattern with state transition methods}
+\caption{Rust typestate pattern. Methods consume \texttt{self} by value for state transitions.}
 \end{listing}
 
-The \texttt{PhantomData<State>} field is a zero-sized type marker that exists only for the type checker.
+The \texttt{PhantomData<State>} field is zero-sized and exists only for type checking.
 The \texttt{get\_data} method is only defined for \texttt{FileHandle<Readable>}; calling it on other states produces a compile error.
-State transition methods consume the handle by value (\texttt{self} rather than \texttt{\&self}), preventing reuse after transition.
-The \texttt{get\_data} accessor uses borrowing (\texttt{\&self}) since reading does not change state.
 
 \section{Results}
 
@@ -274,10 +199,7 @@ mov  w0, #-1         ; Return error
 ret
 \end{minted}
 
-This yields 7 instructions: 2 memory loads, 1 comparison, 1 conditional branch, 1 move, and 2 returns.
-The label \texttt{error:} marks a branch target and is not counted as an instruction.
-The 7-instruction count includes the error handling path; the happy path (valid state) requires 5 instructions,
-but both paths must be present in the compiled binary.
+This yields 7 instructions including the error path. The label \texttt{error:} marks a branch target and is not counted.
 
 The minimal C and Rust implementations both produced identical assembly:
 
@@ -332,13 +254,7 @@ Table~\ref{tab:multi-function} presents the complete results.
 \end{tabular}
 \end{table}
 
-Across all functions, the pattern remains consistent:
-Rust and minimal C produce identical assembly, while defensive C requires 3.5--5.5$\times$ the instructions due to state validation overhead.
-
-In the Rust build, LLVM recognized that \texttt{open} and \texttt{close} have identical implementations
-(both produce a handle with the same data) and merged them into a single function.
-Apple Clang (also LLVM-based) performed the same optimization for the minimal C implementation.
-This code deduplication demonstrates LLVM's optimization capabilities and does not affect the validity of the comparison.
+Across all functions, Rust and minimal C produce identical assembly, while defensive C requires 3.5--5.5$\times$ the instructions.
 
 \section{Discussion}
 
@@ -347,15 +263,8 @@ Rust's type-level state encoding produces assembly identical to minimal C while 
 
 \subsection{Implications for Security}
 
-Google's Android team reported that as the proportion of new memory-unsafe code decreased,
-memory safety vulnerabilities dropped from 76\% in 2019 to 35\% in 2022\cite{google_android}.
-While this correlation does not prove causation, it suggests that language choice significantly impacts vulnerability rates.
-
-The typestate pattern extends this principle beyond memory safety to protocol correctness.
-APIs that enforce valid state sequences through types prevent an entire class of logic errors
----not through runtime checks that might be forgotten, but through compile-time guarantees that cannot be circumvented.
-Future work could investigate whether the typestate pattern applies to other vulnerability classes such as authorization checks,
-input validation, and command sanitization by encoding security state transitions in the type system.
+Google's Android team reported that as memory-unsafe code decreased, memory safety vulnerabilities dropped from 76\% in 2019 to 35\% in 2022\cite{google_android}.
+The typestate pattern extends this principle beyond memory safety to protocol correctness---APIs that enforce valid state sequences through types prevent logic errors through compile-time guarantees, not runtime checks that might be forgotten.
 
 \subsection{Generalizability}
 
@@ -372,24 +281,11 @@ Third, LLVM's optimization behavior may differ across versions or with different
 
 \section{Conclusion}
 
-This paper presents three implementations of a file handle state machine to investigate whether
-Rust's compile-time type checking can eliminate runtime state-validation overhead.
-The defensive C approach provides safety through explicit runtime checks at the cost of conditional branches.
-Minimal C omits these checks for maximum performance but permits invalid operations.
-Rust's typestate pattern encodes state in the type system, rejecting invalid sequences at compile time.
-
+This paper compares three file handle implementations: defensive C with runtime validation, minimal C without checks, and Rust with compile-time typestate enforcement.
 The empirical results validate the zero-cost abstraction principle:
 Rust's typestate implementation produces assembly identical to minimal C (2 instructions, 0 branches)
 while providing compile-time guarantees equivalent to defensive C's runtime checks (7 instructions, 2 branches).
-Across four functions, defensive C consistently requires 3.5--5.5$\times$ more instructions due to state validation overhead.
-
-This analysis has limitations.
-Only ARM64 architecture was tested; results may differ on x86-64 or other platforms and warrant further investigation.
-Additionally, only -O2 optimization was tested; behavior at -O3 or with link-time optimization (LTO) remains unexplored.
-The benchmark uses a synthetic state machine rather than real-world code with I/O operations.
-The typestate pattern applies specifically to state machines; other safety patterns may have different overhead characteristics.
-Only a single state machine design was evaluated; more complex patterns warrant further investigation.
-The separate compilation methodology (\texttt{cdylib}) represents a conservative lower bound; whole-program optimization could yield further improvements.
+Across four functions, defensive C consistently requires 3.5--5.5$\times$ more instructions.
 
 These findings suggest that the traditional safety-performance tradeoff is not fundamental.
 With sufficiently expressive type systems, safety can become a compile-time property with zero runtime cost.
