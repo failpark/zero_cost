@@ -19,7 +19,7 @@ COLORS = {
 def graph1_instruction_count():
 	"""Bar chart: Total instruction count comparison."""
 	implementations = ['Defensive C', 'Minimal C', 'Rust']
-	instructions = [9, 2, 2]
+	instructions = [7, 2, 2]
 	colors = [COLORS['defensive'], COLORS['minimal'], COLORS['rust']]
 
 	_fig, ax = plt.subplots(figsize=(6, 4))
@@ -48,9 +48,9 @@ def graph2_instruction_breakdown():
 	"""Grouped bar chart: Instruction category breakdown."""
 	categories = ['Memory', 'Branches', 'Arithmetic', 'Call/Ret']
 
-	defensive_c = [2, 1, 4, 2]  # Total: 9
-	minimal_c = [0, 0, 1, 1]    # Total: 2
-	rust = [0, 0, 1, 1]         # Total: 2
+	defensive_c = [2, 2, 1, 2]  # Total: 7
+	minimal_c = [1, 0, 0, 1]    # Total: 2
+	rust = [1, 0, 0, 1]         # Total: 2
 
 	x = np.arange(len(categories))
 	width = 0.25
@@ -74,12 +74,12 @@ def graph2_instruction_breakdown():
 	ax.spines['right'].set_visible(False)
 
 	# Highlight the key finding: Rust has 0 branches
-	# ax.annotate(
-		# 'Zero branches\n(compile-time safety)',
-		# xy=(1 + width, 0), xytext=(1.5, 1.5),
-		# arrowprops=dict(arrowstyle='->', color='gray'),
-		# fontsize=9, ha='center'
-	# )
+	ax.annotate(
+		'Zero branches\n(compile-time safety)',
+		xy=(1 + width, 0), xytext=(1.5, 1.5),
+		arrowprops=dict(arrowstyle='->', color='gray'),
+		fontsize=9, ha='center'
+	)
 
 	plt.tight_layout()
 	# plt.savefig(FIGURES_DIR / 'instruction_breakdown.pdf', bbox_inches='tight')

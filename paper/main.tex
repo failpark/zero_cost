@@ -51,7 +51,7 @@ defensive C with runtime validation, minimal C without checks, and Rust with com
 Assembly analysis at -O2 optimization on ARM64 measured instruction counts and conditional branches.
 
 Results demonstrate that Rust produces assembly identical
-to minimal C (2 instructions, 0 branches) while defensive C requires 9 instructions with 2 branches.
+to minimal C (2 instructions, 0 branches) while defensive C requires 7 instructions with 2 branches.
 These findings validate that compile-time type checking eliminates runtime overhead while preventing invalid state transitions.
 \end{abstract}
 
@@ -191,7 +191,7 @@ int file_handle_get_data(file_handle_t* h) {
 	return h->data;
 }
 \end{minted}
-\caption{Defensive C with runtime state validation}
+\caption{Defensive C state management. The error return value of -1 represents one possible error-handling strategy; alternatives include setting \texttt{errno} or using out-parameters.}
 \end{listing}
 
 Each operation contains a conditional branch checking the current state.
@@ -232,6 +232,18 @@ struct FileHandle<State> {
 	_state: PhantomData<State>,
 }
 
+impl FileHandle<Closed> {
+	fn open(self) -> FileHandle<Open> {
+		FileHandle { data: self.data, _state: PhantomData }
+	}
+}
+
+impl FileHandle<Open> {
+	fn read(self) -> FileHandle<Readable> {
+		FileHandle { data: 42, _state: PhantomData }
+	}
+}
+
 impl FileHandle<Readable> {
 	fn get_data(&self) -> i32 {
 		self.data
@@ -262,9 +274,9 @@ mov  w0, #-1         ; Return error
 ret
 \end{minted}
 
-This yields 9 instructions: 2 memory loads, 1 comparison, 1 conditional branch, 1 move, and 2 returns.
+This yields 7 instructions: 2 memory loads, 1 comparison, 1 conditional branch, 1 move, and 2 returns.
 The label \texttt{error:} marks a branch target and is not counted as an instruction.
-The 9-instruction count includes the error handling path; the happy path (valid state) requires 5 instructions,
+The 7-instruction count includes the error handling path; the happy path (valid state) requires 5 instructions,
 but both paths must be present in the compiled binary.
 
 The minimal C and Rust implementations both produced identical assembly:
@@ -279,13 +291,13 @@ This yields 2 instructions: 1 memory operation and 1 return, with zero condition
 \begin{figure}[H]
 	\centering
 	\includesvg[width=1.00\columnwidth,inkscapelatex=false]{figures/instruction_count_without_title.svg}
-	\caption{Total instruction count comparison at -O2. Rust matches minimal C with 2 instructions, while defensive C requires 9 instructions due to state validation overhead.}
+	\caption{Total instruction count comparison at -O2. Rust matches minimal C with 2 instructions, while defensive C requires 7 instructions due to state validation overhead.}
 	\label{fig:instruction-count}
 \end{figure}
 
 Figure~\ref{fig:instruction-count} demonstrates that Rust achieves the same instruction count
 as minimal C---both implementations compile to exactly 2 instructions.
-The defensive C implementation requires 4.5$\times$ the instructions due to explicit state checking logic.
+The defensive C implementation requires 3.5$\times$ the instructions due to explicit state checking logic.
 
 \begin{figure}[H]
 	\centering
@@ -368,7 +380,7 @@ Rust's typestate pattern encodes state in the type system, rejecting invalid seq
 
 The empirical results validate the zero-cost abstraction principle:
 Rust's typestate implementation produces assembly identical to minimal C (2 instructions, 0 branches)
-while providing compile-time guarantees equivalent to defensive C's runtime checks (9 instructions, 2 branches).
+while providing compile-time guarantees equivalent to defensive C's runtime checks (7 instructions, 2 branches).
 Across four functions, defensive C consistently requires 3.5--5.5$\times$ more instructions due to state validation overhead.
 
 This analysis has limitations.
