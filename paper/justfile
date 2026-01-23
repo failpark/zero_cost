@@ -16,6 +16,8 @@ open:
 
 gen_graphs:
 	uv run ./scripts/generate_graphs.py
+	svgo ./figures/instruction_breakdown.svg
+	svgo ./figures/instruction_count.svg
 
 compile:
 	source .venv/bin/activate && \
