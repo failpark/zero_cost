@@ -50,7 +50,7 @@
 Memory safety vulnerabilities constitute the majority of security flaws in systems software, with Microsoft reporting rates of approximately 70\%.
 C requires explicit runtime checks for state validation, introducing conditional branches and overhead.
 Rust claims zero-cost abstractions: compile-time verification without runtime penalty.
-The central aim of this paper is to investigate whether Rust's typestate pattern produces assembly identical to unsafe C code.
+This paper aims to investigate whether Rust's typestate pattern produces assembly identical to unsafe C code.
 
 Three file handle state machine implementations were compared:
 
@@ -118,7 +118,7 @@ Garcia et al.\ formalized typestate-oriented programming, showing how a typestat
 is only called when the object is in a state for which the operation is well defined\ \cite{garcia_foundations_2014}.
 However, prior research has focused primarily on formalization and type theory rather than performance characteristics. 
 Existing empirical work on typestate languages has examined usability\ \cite{coblenz_obsidian_2020} rather than runtime overhead.
-No prior study has compared the assembly output of typestate implementations against equivalent C code at the instruction level.
+To the authors knowledge, no prior study has compared the assembly output of typestate implementations against equivalent C code at the instruction level.
 This paper tries to address that gap through assembly-level analysis of concrete implementations.
 
 \section{Methodology}
@@ -275,7 +275,7 @@ Table~\ref{tab:multi-function} presents the complete results.
 \end{tabular}
 \end{table}
 
-Across all functions, Rust and minimal C produce byte-identical assembly, while defensive C requires 3.5--5.5$\times$ the instructions.
+Across all functions, Rust and minimal C produce instruction-identical assembly, while defensive C requires 3.5--5.5$\times$ the instructions.
 Complete assembly listings for all functions are available in the project repository for independent verification.
 
 \section{Discussion}
@@ -316,7 +316,7 @@ Rust's typestate implementation produces assembly identical to minimal C (2 inst
 while providing compile-time guarantees equivalent to defensive C's runtime checks (7 instructions, 2 branches).
 Across four functions, defensive C consistently requires 3.5--5.5$\times$ more instructions.
 
-These findings suggest that the traditional safety-performance tradeoff is not fundamental.
+These findings suggest that for certain patterns, the traditional safety-performance tradeoff can be avoided.
 With sufficiently expressive type systems, safety can become a compile-time property with zero runtime cost.
 Future work should examine x86-64 platforms, more complex state machines, and runtime performance under real workloads.
 
