@@ -23,10 +23,18 @@ def graph1_instruction_count():
 	colors = [COLORS['defensive'], COLORS['minimal'], COLORS['rust']]
 
 	_fig, ax = plt.subplots(figsize=(6, 4))
-	bars = ax.bar(implementations, instructions, color=colors, edgecolor='black', linewidth=0.5)
+	bars = [
+		ax.bar(implementations[0], instructions[0], color=COLORS['defensive'],
+			edgecolor='black', linewidth=0.5, label='Defensive C'),
+		ax.bar(implementations[1], instructions[1], color=COLORS['minimal'],
+			edgecolor='black', linewidth=0.5, label='Minimal C'),
+		ax.bar(implementations[2], instructions[2], color=COLORS['rust'],
+			edgecolor='black', linewidth=0.5, label='Rust'),
+	]
 
 	# Add value labels on bars
-	for bar, val in zip(bars, instructions):
+	for bar_container, val in zip(bars, instructions):
+		bar = bar_container[0]  # Extract the bar from BarContainer
 		ax.text(
 			bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
 			str(val), ha='center', va='bottom', fontweight='bold'
@@ -37,6 +45,7 @@ def graph1_instruction_count():
 	ax.set_ylim(0, 9)
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
+	ax.legend()
 
 	plt.tight_layout()
 	# plt.savefig(FIGURES_DIR / 'instruction_count.pdf', bbox_inches='tight')
