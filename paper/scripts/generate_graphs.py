@@ -49,7 +49,7 @@ def graph1_instruction_count():
 
 	plt.tight_layout()
 	# plt.savefig(FIGURES_DIR / 'instruction_count.pdf', bbox_inches='tight')
-	plt.savefig(FIGURES_DIR / 'instruction_count_without_title.svg')
+	plt.savefig(FIGURES_DIR / 'instruction_count.svg')
 	plt.close()
 	print(f"✓ Generated {FIGURES_DIR / 'instruction_count.pdf'}")
 
@@ -92,7 +92,7 @@ def graph2_instruction_breakdown():
 
 	plt.tight_layout()
 	# plt.savefig(FIGURES_DIR / 'instruction_breakdown.pdf', bbox_inches='tight')
-	plt.savefig(FIGURES_DIR / 'instruction_breakdown_without_title.svg')
+	plt.savefig(FIGURES_DIR / 'instruction_breakdown.svg')
 	plt.close()
 	print(f"✓ Generated {FIGURES_DIR / 'instruction_breakdown.pdf'}")
 

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="505" height="282" data-diagram-type="STATE" preserveAspectRatio="none" style="width:505px;height:282px;background:#fefefe" viewBox="0 0 505 282">
-	<path fill="#fefefe" d="M0 0h505v282H0z" style="stroke:none;stroke-width:1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="505" height="242" data-diagram-type="STATE" preserveAspectRatio="none" style="width:505px;height:242px;background:#fefefe" viewBox="0 0 505 242">
+	<path fill="#fefefe" d="M0 0h505v242H0z" style="stroke:none;stroke-width:1"/>
 	<rect width="66.471" height="50" x="130.08" y="12" fill="#add8e6" rx="12.5" ry="12.5" style="stroke:#333;stroke-width:1"/>
 	<path d="M130.08 39.015h66.471" style="stroke:#333;stroke-width:1"/>
 	<text x="140.08" y="31.075" font-family="Verdana" font-size="14" textLength="46.471">Closed</text>
