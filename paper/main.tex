@@ -68,31 +68,30 @@ memory safety, typestate, Rust, C, zero-cost abstractions, compile-time verifica
 
 Memory safety vulnerabilities remain the dominant class of security flaws in systems software.
 According to the 2025 CWE Top 25 Most Dangerous Software Weaknesses, memory corruption vulnerabilities rank highly:
-Out-of-bounds Write (CWE-787, \#5), Use After Free (CWE-416, \#7), and Out-of-bounds Read (CWE-125, \#8)\cite{cwe_2025}.
-Microsoft reports that approximately 70\% of their security vulnerabilities are memory safety issues\cite{microsoft_safety}.
+Out-of-bounds Write (CWE-787, \#5), Use After Free (CWE-416, \#7), and Out-of-bounds Read (CWE-125, \#8)\ \cite{cwe_2025}.
+Microsoft reports that approximately 70\% of their security vulnerabilities are memory safety issues\ \cite{microsoft_safety}.
 The U.S. Cybersecurity and Infrastructure Security Agency (CISA)
-has issued guidance urging software manufacturers to adopt memory-safe languages\cite{cisa_memory}.
+has issued guidance urging software manufacturers to adopt memory-safe languages\ \cite{cisa_memory}.
 
 Systems programming languages such as C provide the low-level control necessary for performance-critical code.
 However, C places the entire burden of correctness on the programmer.
-State management is ensuring operations occur only when preconditions are met\cite{google_paper}.
+State management is ensuring operations occur only when preconditions are met\ \cite{google_paper}.
 These must be enforced through explicit runtime checks.
 In C, state is typically tracked with an enum field, and each operation checks this field before proceeding, introducing conditional branches with associated overhead.
 
 This creates a fundamental tension: defensive programming incurs runtime overhead, while omitting checks permits undefined behavior.
 Higher-level languages enforce safety through garbage collection and runtime checks,
-but these mechanisms limit their applicability to resource-constrained systems\cite{oncd_report}.
+but these mechanisms limit their applicability to resource-constrained systems\ \cite{oncd_report}.
 
 Rust takes a different approach: encoding invariants in the type system so that invalid programs fail to compile.
-Rust's design philosophy emphasizes \emph{zero-cost abstractions}---high-level constructs that compile to code as efficient as hand-written low-level equivalents\cite{rust_embedded}.
+Rust's design philosophy emphasizes \emph{zero-cost abstractions}---high-level constructs that compile to code as efficient as hand-written low-level equivalents\ \cite{rust_embedded}.
 Generic type parameters are instantiated through monomorphization, generating specialized machine code for each concrete type at compile time rather than using runtime dispatch.
 This paper hypothesizes that Rust's typestate pattern produces assembly identical to unchecked C while providing compile-time safety guarantees.
 The central aim of this study is: Can compile-time state verification eliminate runtime overhead while preventing invalid state transitions?
-The complete source code for all implementations, build scripts, and generated assembly are available at \url{https://github.com/failpark/zero_cost/}.
 
 \section{Background}
 
-Strom and Yemini introduced typestate in 1986 as a compile-time technique to detect invalid execution sequences\cite{strom_typestate_1986}.
+Strom and Yemini introduced typestate in 1986 as a compile-time technique to detect invalid execution sequences\ \cite{strom_typestate_1986}.
 Their formulation tracked variables through states like ``uninitialized'' or ``deallocated,'' with the compiler verifying state flow through program paths.
 The typestate pattern encodes an object's state in its type: rather than a single \texttt{FileHandle} type with a state field,
 each state becomes a distinct type (\texttt{FileHandle<Closed>}, \texttt{FileHandle<Open>}, etc.).
@@ -100,15 +99,24 @@ Operations consume the input type and produce the output type---the \texttt{open
 Attempting to call \texttt{read} on a \texttt{FileHandle<Closed>} produces a compile-time error; the method does not exist for that type.
 
 Rust applies affine types, meaning values can be used at most once, enabling memory safety without garbage collection.
-The borrow checker prevents use-after-free by tracking ownership at compile time\cite{astrauskas_leveraging_2019}.
+The borrow checker prevents use-after-free by tracking ownership at compile time\ \cite{astrauskas_leveraging_2019}.
 While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters
-and zero-sized \texttt{PhantomData} markers that occupy no memory\cite{rust_reference_phantomdata}.
+and zero-sized \texttt{PhantomData} markers that occupy no memory\ \cite{rust_reference_phantomdata}.
 
-Prior empirical work comparing typestate performance to C at the assembly level remains limited.
-This paper addresses that gap through assembly-level analysis of concrete implementations.
+Typestate analysis, sometimes called \emph{protocol analysis},
+defines valid sequences of operations that can be performed upon an instance of a given type\ \cite{deline_typestates_2004}. 
+DeLine and Fähndrich demonstrated how typestate can enforce high-level protocols in low-level software,
+describing resource management protocols that specify operations must be performed in a certain order\ \cite{deline_enforcing_2001}.
+Garcia et al.\ formalized typestate-oriented programming, showing how a typestate checker can statically ensure that an object method 
+is only called when the object is in a state for which the operation is well defined\ \cite{garcia_foundations_2014}.
+However, prior research has focused primarily on formalization and type theory rather than performance characteristics. 
+Existing empirical work on typestate languages has examined usability\ \cite{coblenz_obsidian_2020} rather than runtime overhead.
+No prior study has compared the assembly output of typestate implementations against equivalent C code at the instruction level.
+This paper tries addresses that gap through assembly-level analysis of concrete implementations.
 
 \section{Methodology}
 
+The complete source code for all implementations, build scripts, and generated assembly are available at \url{https://github.com/failpark/zero_cost/}.
 To isolate state management overhead from I/O latency, three variants of a minimal file handle abstraction were implemented (Figure~\ref{fig:state-machine}).
 The handle stores only an integer \texttt{data} field, and operations simulate state transitions without actual file system calls.
 
@@ -276,9 +284,14 @@ Rust's type-level state encoding produces assembly identical to minimal C while 
 
 \subsection{Implications for Security}
 
-Google's Android team reported that as memory-unsafe code decreased, memory safety vulnerabilities dropped from 76\% in 2019 to 35\% in 2022\cite{google_android}.
-The typestate pattern extends this principle beyond memory safety to protocol correctness
----APIs that enforce valid state sequences through types prevent logic errors through compile-time guarantees, not runtime checks that might be forgotten.
+Google's Android team reported that as memory-unsafe code decreased, memory safety vulnerabilities dropped from 76\% in 2019 to 35\% in 2022\ \cite{google_android}.
+
+The typestate pattern extends this principle beyond memory safety to protocol correctness.
+Strom and Yemini's original formulation ensured that
+``the sequence of operations on each variable obeys a finite state grammar associated with that variable's type''\ \cite{strom_typestate_1986}.
+More recent work has shown how typestate can enforce that operations must be performed in a certain order
+and that certain operations must be performed before accessing a given data object\ \cite{deline_enforcing_2001}.
+APIs that enforce valid state sequences through types prevent logic errors through compile-time guarantees, not runtime checks that might be forgotten.
 
 \subsection{Generalizability}
 
