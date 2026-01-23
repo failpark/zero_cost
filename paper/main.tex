@@ -126,7 +126,7 @@ The handle stores only an integer \texttt{data} field, and operations simulate s
 \begin{figure}[H]
 	\centering
 	\includesvg[width=1.00\columnwidth,inkscapelatex=false]{svg/state_machine_manual_bottom}
-	\caption{File handle state machine with four states and their transitions.}
+	\caption{File handle state machine with four states and their transitions. Author's figure. Generated using PlantUML.}
 	\label{fig:state-machine}
 \end{figure}
 
@@ -230,7 +230,7 @@ This yields 2 instructions: 1 memory operation and 1 return, with zero condition
 \begin{figure}[H]
 	\centering
 	\includesvg[width=1.00\columnwidth,inkscapelatex=false]{figures/instruction_count.svg}
-	\caption{Total instruction count comparison at -O2. Rust matches minimal C with 2 instructions, while defensive C requires 7 instructions due to state validation overhead.}
+	\caption{Total instruction count comparison. Author's figure. Generated using matplotlib.}
 	\label{fig:instruction-count}
 \end{figure}
 
@@ -241,7 +241,7 @@ The defensive C implementation requires 3.5$\times$ the instructions due to expl
 \begin{figure}[H]
 	\centering
 	\includesvg[width=\columnwidth,inkscapelatex=false]{figures/instruction_breakdown.svg}
-	\caption{Instruction category breakdown. The critical finding: Rust has zero conditional branch instructions, matching minimal C, while defensive C includes 2 branch instructions for runtime state validation.}
+	\caption{Instruction category breakdown.  Author's figure. Generated using matplotlib.}
 	\label{fig:instruction-breakdown}
 \end{figure}
 
