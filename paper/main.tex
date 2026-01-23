@@ -49,7 +49,7 @@
 \begin{abstract}
 Memory safety vulnerabilities constitute the majority of security flaws in systems software, with Microsoft reporting rates of approximately 70\%.
 C requires explicit runtime checks for state validation, introducing conditional branches and overhead.
-Rust claims zero-cost abstractions: compile-time verification without runtime penalty.
+Rust provides zero-cost abstractions: compile-time verification without runtime penalty.
 This paper aims to investigate whether Rust's typestate pattern produces assembly identical to unsafe C code.
 
 Three file handle state machine implementations were compared:
@@ -68,7 +68,7 @@ These findings validate that compile-time type checking eliminates runtime overh
 \end{abstract}
 
 \begin{IEEEkeywords}
-memory safety, typestate, Rust, C, zero-cost abstractions, compile-time verification, ARM64
+memory safety, typestate, Rust, C, zero-cost abstractions, compile-time verification, ARM64, assembly analysis
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -87,12 +87,13 @@ In C, state is typically tracked with an enum field, and each operation checks t
 introducing conditional branches with associated overhead.
 
 This creates a fundamental tension: defensive programming incurs runtime overhead, while omitting checks permits undefined behavior.
-Higher-level languages enforce safety through garbage collection and runtime checks,
+Many higher-level languages enforce safety through garbage collection and runtime checks,
 but these mechanisms limit their applicability to resource-constrained systems\ \cite{oncd_report}.
 
 Rust takes a different approach: encoding invariants in the type system so that invalid programs fail to compile.
 Rust's design philosophy emphasizes \emph{zero-cost abstractions}---high-level constructs that compile to code as efficient as hand-written low-level equivalents\ \cite{rust_embedded}.
-Generic type parameters are instantiated through monomorphization, generating specialized machine code for each concrete type at compile time rather than using runtime dispatch.
+Generic type parameters are instantiated through monomorphization,
+generating specialized machine code for each concrete type at compile-time rather than using runtime dispatch.
 This paper hypothesizes that Rust's typestate pattern produces assembly identical to unchecked C while providing compile-time safety guarantees.
 Can compile-time state verification eliminate runtime overhead while preventing invalid state transitions?
 
@@ -106,7 +107,7 @@ Operations consume the input type and produce the output type---the \texttt{open
 Attempting to call \texttt{read} on a \texttt{FileHandle<Closed>} produces a compile-time error; the method does not exist for that type.
 
 Rust applies affine types, meaning values can be used at most once, enabling memory safety without garbage collection.
-The borrow checker prevents use-after-free by tracking ownership at compile time\ \cite{astrauskas_leveraging_2019}.
+The borrow checker prevents use-after-free by tracking ownership at compile-time\ \cite{astrauskas_leveraging_2019}.
 While Rust lacks explicit typestate abstractions, its type system supports implementing them through generic parameters
 and zero-sized---needing no memory allocated---\texttt{PhantomData} markers\ \cite{rust_reference_phantomdata}.
 
@@ -118,12 +119,12 @@ Garcia et al.\ formalized typestate-oriented programming, showing how a typestat
 is only called when the object is in a state for which the operation is well defined\ \cite{garcia_foundations_2014}.
 However, prior research has focused primarily on formalization and type theory rather than performance characteristics. 
 Existing empirical work on typestate languages has examined usability\ \cite{coblenz_obsidian_2020} rather than runtime overhead.
-To the authors knowledge, no prior study has compared the assembly output of typestate implementations against equivalent C code at the instruction level.
+To the author's knowledge, no prior study has compared the assembly output of typestate implementations against equivalent C code at the instruction level.
 This paper tries to address that gap through assembly-level analysis of concrete implementations.
 
 \section{Methodology}
 
-The complete source code for all implementations, build scripts, and generated assembly are available at \url{https://github.com/failpark/zero_cost/}.
+The complete source code for all implementations, build scripts, and generated assembly is available at \url{https://github.com/failpark/zero_cost/}.
 To isolate state management overhead from I/O latency, three variants of a minimal file handle abstraction were implemented (Figure~\ref{fig:state-machine}).
 The handle stores only an integer \texttt{data} field, and operations simulate state transitions without actual file system calls.
 
@@ -174,7 +175,7 @@ int file_handle_get_data(file_handle_t* h) {
 \end{minted}
 \end{listing}
 
-This version represents the performance ceiling but permits invalid operations.
+This version represents optimal performance but permits invalid operations.
 
 \subsection{Rust Typestate Implementation}
 
@@ -225,7 +226,7 @@ The label \texttt{error:} is a symbolic marker, not an executed instruction and 
 The 7-instruction count includes the error handling path; the happy path (valid state) requires 5 instructions,
 but both paths must be present in the compiled binary.
 
-The minimal C and Rust implementations both produced identical assembly:
+The minimal C and Rust implementations both produced instruction-equivalent assembly:
 \begin{minted}[fontsize=\scriptsize]{gas}
 ldr  w0, [x0]        ; Load data directly
 ret
