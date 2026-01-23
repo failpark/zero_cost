@@ -20,7 +20,6 @@
 	numbersep=5pt,
 	tabsize=2
 }
-% \SetupFloatingEnvironment{listing}{placement=htp}
 
 \begin{document}
 
@@ -47,7 +46,13 @@ Rust claims zero-cost abstractions: compile-time verification without runtime pe
 This paper investigates whether Rust's typestate pattern produces assembly identical to unsafe C code.
 
 Three file handle state machine implementations were compared:
-defensive C with runtime validation, minimal C without checks, and Rust with compile-time typestate enforcement.
+
+\begin{enumerate}
+	\item defensive C with runtime validation,
+	\item minimal C without checks,
+	\item and Rust with compile-time typestate enforcement.
+\end{enumerate}
+
 Assembly analysis at -O2 optimization on ARM64 measured instruction counts and conditional branches.
 
 Results demonstrate that Rust produces assembly identical
@@ -70,7 +75,8 @@ has issued guidance urging software manufacturers to adopt memory-safe languages
 
 Systems programming languages such as C provide the low-level control necessary for performance-critical code.
 However, C places the entire burden of correctness on the programmer.
-State management---ensuring operations occur only when preconditions are met\cite{google_paper}---must be enforced through explicit runtime checks.
+State management is ensuring operations occur only when preconditions are met\cite{google_paper}.
+These must be enforced through explicit runtime checks.
 In C, state is typically tracked with an enum field, and each operation checks this field before proceeding, introducing conditional branches with associated overhead.
 
 This creates a fundamental tension: defensive programming incurs runtime overhead, while omitting checks permits undefined behavior.
@@ -81,7 +87,7 @@ Rust takes a different approach: encoding invariants in the type system so that 
 Rust's design philosophy emphasizes \emph{zero-cost abstractions}---high-level constructs that compile to code as efficient as hand-written low-level equivalents\cite{rust_embedded}.
 Generic type parameters are instantiated through monomorphization, generating specialized machine code for each concrete type at compile time rather than using runtime dispatch.
 This paper hypothesizes that Rust's typestate pattern produces assembly identical to unchecked C while providing compile-time safety guarantees.
-The central research question is: Can compile-time state verification eliminate runtime overhead while preventing invalid state transitions?
+The central aim of this study is: Can compile-time state verification eliminate runtime overhead while preventing invalid state transitions?
 The complete source code for all implementations, build scripts, and generated assembly are available at \url{https://github.com/failpark/zero_cost/}.
 
 \section{Background}
