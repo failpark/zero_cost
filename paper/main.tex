@@ -95,7 +95,7 @@ Rust's design philosophy emphasizes \emph{zero-cost abstractions}---high-level c
 Generic type parameters are instantiated through monomorphization,
 generating specialized machine code for each concrete type at compile-time rather than using runtime dispatch.
 This paper hypothesizes that Rust's typestate pattern produces assembly identical to unchecked C while providing compile-time safety guarantees.
-Can compile-time state verification eliminate runtime overhead while preventing invalid state transitions?
+The central aim is to investigate whether compile-time state verifications eliminate runtime overhead while preventing invalid state transitions.
 
 \section{Background}
 
