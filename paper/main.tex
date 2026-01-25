@@ -140,11 +140,12 @@ Assembly was extracted using \texttt{objdump -d} on an Apple M3 chip (\texttt{aa
 
 Rust was compiled as a \texttt{cdylib} (C-compatible dynamic library) to prevent whole-program optimization from constant-folding the entire state machine.
 Functions were marked with \texttt{\#[no\_mangle]} to preserve function boundaries for comparison.
-The C implementations were compiled as shared libraries with equivalent settings (\texttt{-shared -fPIC}).
+The C implementations were compiled to object files (\texttt{gcc -O2 -c}).
 
 This study is limited to ARM64 architecture; results on other platforms such as x86-64 may differ.
 
-Instructions and conditional branches were counted manually for each function, with assembly listings verified against compiler output.
+Instruction counts were collected using a Python script that parses assembly output and categorizes instructions
+by type (branch, compare, memory, arithmetic, control), ensuring reproducible and systematic analysis.
 Four state transition functions were analyzed: \texttt{open}, \texttt{read}, \texttt{get\_data}, and \texttt{close}.
 These four functions represent all state transitions in the file handle state machine, providing complete coverage of the pattern's behavior.
 
@@ -264,14 +265,15 @@ Table~\ref{tab:multi-function} presents the complete results.
 \centering
 \caption{Instruction counts across all state transition functions at -O2 optimization.}
 \label{tab:multi-function}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \hline
-\textbf{Function} & \textbf{Defensive C} & \textbf{Minimal C / Rust} & \textbf{Overhead} \\
+\textbf{Function} & \textbf{Defensive C} & \textbf{Minimal C} & \textbf{Rust} & \textbf{Overhead} \\
 \hline
-\texttt{get\_data} & 7 & 2 & 3.5$\times$ \\
-\texttt{open} & 9 & 2 & 4.5$\times$ \\
-\texttt{read} & 11 & 2 & 5.5$\times$ \\
-\texttt{close} & 8 & 2 & 4.0$\times$ \\
+\hline
+\texttt{get\_data} & 7 & 2 & 2 & 3.5$\times$ \\
+\texttt{open} & 9 & 2 & 2 & 4.5$\times$ \\
+\texttt{read} & 11 & 4 & 2 & 5.5$\times$ \\
+\texttt{close} & 8 & 3 & 2 & 4.0$\times$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -287,8 +289,9 @@ Rust's type-level state encoding produces assembly identical to minimal C while 
 \subsection{Implications for Security}
 
 Google's Android team reported that as memory-unsafe code decreased, memory safety vulnerabilities dropped from 76\ \% in 2019 to 35\ \% in 2022\ \cite{google_android}.
+While this correlation does not prove causation, it suggests that language choice significantly impacts vulnerability rates.
 
-The typestate pattern extends this principle beyond memory safety to protocol correctness.
+The typestate pattern extends principle beyond memory safety to protocol correctness.
 Strom and Yemini's original formulation ensured that
 ``the sequence of operations on each variable obeys a finite state grammar associated with that variable's type''\ \cite{strom_typestate_1986}.
 More recent work has shown how typestate can enforce that operations must be performed in a certain order
